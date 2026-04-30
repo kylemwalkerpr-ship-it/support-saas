@@ -1,12 +1,12 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getClerkUserId } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import type { Order, OrderItem, OrderStatus, OrderStatusHistory } from '@/lib/types'
 
 async function requireProfile(db: ReturnType<typeof createSupabaseAdminClient>) {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) throw new Error('Unauthorized')
 
   const { data: profile } = await db

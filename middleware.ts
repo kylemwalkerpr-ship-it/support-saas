@@ -1,11 +1,26 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Public paths — no session required
-const PUBLIC_PATHS = ['/', '/sign-in', '/sign-up', '/api/webhooks']
+const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/webhooks']
+
+function hasSession(req: NextRequest): boolean {
+  return !!(
+    req.cookies.get('__session') ??
+    req.cookies.get('__clerk_db_jwt') ??
+    req.headers.get('authorization')
+  )
+}
 
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  // Redirect signed-in users away from landing page
+  if (pathname === '/') {
+    if (hasSession(req)) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+    return NextResponse.next()
+  }
 
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + '/')
@@ -13,14 +28,7 @@ export default function proxy(req: NextRequest) {
 
   if (isPublic) return NextResponse.next()
 
-  // Clerk sets __session when the user is authenticated.
-  // Full JWT verification happens in every server component and action via auth().
-  const session =
-    req.cookies.get('__session') ??
-    req.cookies.get('__clerk_db_jwt') ??
-    req.headers.get('authorization')
-
-  if (!session) {
+  if (!hasSession(req)) {
     const signIn = new URL('/sign-in', req.url)
     signIn.searchParams.set('redirect_url', pathname)
     return NextResponse.redirect(signIn)

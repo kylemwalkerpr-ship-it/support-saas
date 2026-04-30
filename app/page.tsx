@@ -1,12 +1,7 @@
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, CheckCircle, Users, Briefcase, Shield } from 'lucide-react'
 
-export default async function LandingPage() {
-  const { userId } = await auth()
-
-  if (userId) redirect('/dashboard')
+export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">

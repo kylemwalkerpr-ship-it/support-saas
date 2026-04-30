@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getClerkUserId } from '@/lib/auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import type { Service } from '@/lib/types'
 
@@ -33,7 +33,7 @@ export async function createService(input: {
   category: string
   features: string[]
 }): Promise<Service> {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) throw new Error('Unauthorized')
 
   const db = createSupabaseAdminClient()
@@ -59,7 +59,7 @@ export async function toggleServiceActive(
   serviceId: string,
   is_active: boolean
 ): Promise<void> {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) throw new Error('Unauthorized')
 
   const db = createSupabaseAdminClient()

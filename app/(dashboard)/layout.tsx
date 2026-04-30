@@ -1,6 +1,6 @@
-import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
+import { getClerkUserId } from '@/lib/auth'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Toaster } from 'sonner'
 
@@ -9,16 +9,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) redirect('/sign-in')
 
   const profile = await getOrCreateProfile()
-
   if (!profile) redirect('/sign-in')
-
-  // New users without a role selected (default is 'client' from DB, but we
-  // can still send them to onboarding if they haven't explicitly chosen)
-  // For now, onboarding only happens if explicitly navigated to.
 
   return (
     <div className="flex min-h-screen bg-gray-50">

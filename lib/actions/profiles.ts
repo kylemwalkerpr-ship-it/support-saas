@@ -1,11 +1,11 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
+import { getClerkUserId } from '@/lib/auth'
 import type { Profile, Role } from '@/lib/types'
 
 export async function getOrCreateProfile(): Promise<Profile | null> {
-  const { userId, sessionClaims } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
@@ -18,19 +18,9 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 
   if (existing) return existing as Profile
 
-  // First time — create profile from Clerk session claims
-  const email =
-    (sessionClaims?.email as string) ??
-    (sessionClaims?.primaryEmail as string) ??
-    ''
-  const fullName =
-    (sessionClaims?.fullName as string) ??
-    (sessionClaims?.name as string) ??
-    null
-
   const { data: created } = await db
     .from('profiles')
-    .insert({ clerk_user_id: userId, email, full_name: fullName })
+    .insert({ clerk_user_id: userId, email: '' })
     .select('*')
     .single()
 
@@ -38,11 +28,10 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 }
 
 export async function setProfileRole(role: Role): Promise<Profile | null> {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
-
   const { data } = await db
     .from('profiles')
     .update({ role })
@@ -58,11 +47,10 @@ export async function updateProfile(updates: {
   bio?: string
   avatar_url?: string
 }): Promise<Profile | null> {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
-
   const { data } = await db
     .from('profiles')
     .update(updates)
@@ -74,7 +62,7 @@ export async function updateProfile(updates: {
 }
 
 export async function getAllProfiles(): Promise<Profile[]> {
-  const { userId } = await auth()
+  const userId = await getClerkUserId()
   if (!userId) return []
 
   const db = createSupabaseAdminClient()
@@ -86,11 +74,8 @@ export async function getAllProfiles(): Promise<Profile[]> {
   return (data as Profile[]) ?? []
 }
 
-export async function updateUserRole(
-  profileId: string,
-  role: Role
-): Promise<void> {
-  const { userId } = await auth()
+export async function updateUserRole(profileId: string, role: Role): Promise<void> {
+  const userId = await getClerkUserId()
   if (!userId) throw new Error('Unauthorized')
 
   const db = createSupabaseAdminClient()

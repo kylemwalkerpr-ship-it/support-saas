@@ -1,0 +1,22 @@
+{
+  "/(dashboard)/admin/orders/page": "app/(dashboard)/admin/orders/page.js",
+  "/(dashboard)/admin/page": "app/(dashboard)/admin/page.js",
+  "/(dashboard)/admin/users/page": "app/(dashboard)/admin/users/page.js",
+  "/(dashboard)/client/orders/[id]/page": "app/(dashboard)/client/orders/[id]/page.js",
+  "/(dashboard)/client/orders/page": "app/(dashboard)/client/orders/page.js",
+  "/(dashboard)/client/page": "app/(dashboard)/client/page.js",
+  "/(dashboard)/client/services/page": "app/(dashboard)/client/services/page.js",
+  "/(dashboard)/consultant/available/page": "app/(dashboard)/consultant/available/page.js",
+  "/(dashboard)/consultant/my-orders/[id]/page": "app/(dashboard)/consultant/my-orders/[id]/page.js",
+  "/(dashboard)/consultant/my-orders/page": "app/(dashboard)/consultant/my-orders/page.js",
+  "/(dashboard)/consultant/page": "app/(dashboard)/consultant/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/onboarding/page": "app/(dashboard)/onboarding/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/webhooks/clerk/route": "app/api/webhooks/clerk/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
+  "/sign-in/[[...rest]]/page": "app/sign-in/[[...rest]]/page.js",
+  "/sign-up/[[...rest]]/page": "app/sign-up/[[...rest]]/page.js"
+}
