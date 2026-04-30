@@ -32,14 +32,47 @@ export async function setProfileRole(role: Role): Promise<Profile | null> {
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
+  // Consultants start pending until an admin approves them
+  const status = role === 'consultant' ? 'pending' : 'active'
   const { data } = await db
     .from('profiles')
-    .update({ role })
+    .update({ role, status })
     .eq('clerk_user_id', userId)
     .select('*')
     .single()
 
   return (data as Profile) ?? null
+}
+
+export async function setConsultantStatus(
+  profileId: string,
+  status: 'active' | 'suspended'
+): Promise<void> {
+  const userId = await getClerkUserId()
+  if (!userId) throw new Error('Unauthorized')
+
+  const db = createSupabaseAdminClient()
+  const { data: me } = await db
+    .from('profiles')
+    .select('role')
+    .eq('clerk_user_id', userId)
+    .single()
+
+  if (me?.role !== 'admin') throw new Error('Forbidden')
+
+  await db.from('profiles').update({ status }).eq('id', profileId)
+}
+
+export async function getPendingConsultants(): Promise<Profile[]> {
+  const db = createSupabaseAdminClient()
+  const { data } = await db
+    .from('profiles')
+    .select('*')
+    .eq('role', 'consultant')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+
+  return (data as Profile[]) ?? []
 }
 
 export async function updateProfile(updates: {

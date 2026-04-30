@@ -1,4 +1,5 @@
 export type Role = 'client' | 'consultant' | 'admin'
+export type ProfileStatus = 'active' | 'pending' | 'suspended'
 
 export type OrderStatus =
   | 'cart'
@@ -17,6 +18,7 @@ export interface Profile {
   full_name: string | null
   avatar_url: string | null
   role: Role
+  status: ProfileStatus
   bio: string | null
   created_at: string
   updated_at: string

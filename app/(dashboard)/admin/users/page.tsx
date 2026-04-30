@@ -1,13 +1,25 @@
-import { Users } from 'lucide-react'
+import { Users, Clock } from 'lucide-react'
 import { Header } from '@/components/dashboard/header'
 import { EmptyState } from '@/components/dashboard/empty-state'
-import { getAllProfiles } from '@/lib/actions/profiles'
+import { getAllProfiles, getPendingConsultants } from '@/lib/actions/profiles'
 import { formatDate, getInitials } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChangeRoleButton } from './change-role-button'
+import { ConsultantActions } from './consultant-actions'
 
 export default async function AdminUsersPage() {
-  const profiles = await getAllProfiles()
+  const [profiles, pending] = await Promise.all([
+    getAllProfiles(),
+    getPendingConsultants(),
+  ])
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      active: 'bg-green-100 text-green-700',
+      pending: 'bg-yellow-100 text-yellow-700',
+      suspended: 'bg-red-100 text-red-700',
+    }
+    return map[status] ?? 'bg-gray-100 text-gray-700'
+  }
 
   const roleBadge = (role: string) => {
     const map: Record<string, string> = {
@@ -20,9 +32,32 @@ export default async function AdminUsersPage() {
 
   return (
     <div>
-      <Header title="Users" subtitle="Manage all users and their roles" />
+      <Header title="Users" subtitle="Manage all users and their access" />
 
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+        {/* Pending approval alert */}
+        {pending.length > 0 && (
+          <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-yellow-800">
+                  {pending.length} consultant{pending.length > 1 ? 's' : ''}{' '}
+                  waiting for approval
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {pending.map((p) => (
+                    <li key={p.id} className="text-sm text-yellow-700">
+                      {p.full_name ?? 'Unnamed'} — {p.email}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* All users table */}
         <Card>
           <CardHeader>
             <CardTitle>All Users ({profiles.length})</CardTitle>
@@ -41,6 +76,7 @@ export default async function AdminUsersPage() {
                     <tr className="border-b border-gray-100">
                       <th className="pb-3 text-left font-medium text-gray-500">User</th>
                       <th className="pb-3 text-left font-medium text-gray-500">Role</th>
+                      <th className="pb-3 text-left font-medium text-gray-500">Status</th>
                       <th className="pb-3 text-left font-medium text-gray-500">Joined</th>
                       <th className="pb-3 text-right font-medium text-gray-500">Actions</th>
                     </tr>
@@ -66,11 +102,20 @@ export default async function AdminUsersPage() {
                             {profile.role}
                           </span>
                         </td>
+                        <td className="py-3">
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge(profile.status)}`}>
+                            {profile.status}
+                          </span>
+                        </td>
                         <td className="py-3 text-gray-500">
                           {formatDate(profile.created_at)}
                         </td>
                         <td className="py-3 text-right">
-                          <ChangeRoleButton profileId={profile.id} currentRole={profile.role} />
+                          <ConsultantActions
+                            profileId={profile.id}
+                            role={profile.role}
+                            status={profile.status}
+                          />
                         </td>
                       </tr>
                     ))}

@@ -1,18 +1,19 @@
 import Link from 'next/link'
-import { ClipboardList, Users, TrendingUp, DollarSign } from 'lucide-react'
+import { ClipboardList, Users, TrendingUp, DollarSign, Clock } from 'lucide-react'
 import { Header } from '@/components/dashboard/header'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { OrderStatusBadge } from '@/components/dashboard/order-status-badge'
 import { getAllOrders } from '@/lib/actions/orders'
-import { getAllProfiles } from '@/lib/actions/profiles'
+import { getAllProfiles, getPendingConsultants } from '@/lib/actions/profiles'
 import { formatCurrency, formatRelativeDate } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 export default async function AdminOverviewPage() {
-  const [orders, profiles] = await Promise.all([
+  const [orders, profiles, pending] = await Promise.all([
     getAllOrders(),
     getAllProfiles(),
+    getPendingConsultants(),
   ])
 
   const activeOrders = orders.filter((o) =>
@@ -26,6 +27,25 @@ export default async function AdminOverviewPage() {
   return (
     <div>
       <Header title="Admin Overview" subtitle="Platform-wide analytics and management" />
+
+      {pending.length > 0 && (
+        <div className="mx-6 mt-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Clock className="h-5 w-5 text-yellow-600 shrink-0" />
+            <div>
+              <p className="font-semibold text-yellow-800">
+                {pending.length} consultant application{pending.length > 1 ? 's' : ''} awaiting review
+              </p>
+              <p className="text-sm text-yellow-600 mt-0.5">
+                {pending.map((p) => p.full_name ?? p.email).join(', ')}
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" className="bg-yellow-600 hover:bg-yellow-700 shrink-0">
+            <Link href="/admin/users">Review Now</Link>
+          </Button>
+        </div>
+      )}
 
       <div className="p-6 space-y-6">
         {/* Stats */}
