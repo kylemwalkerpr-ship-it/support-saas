@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, RotateCcw, ChevronDown } from 'lucide-react'
+import { CheckCircle, XCircle, RotateCcw, ChevronDown, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { setConsultantStatus, updateUserRole } from '@/lib/actions/profiles'
+import { setConsultantStatus, updateUserRole, deleteProfile } from '@/lib/actions/profiles'
 import type { Role, ProfileStatus } from '@/lib/types'
 
 export function ConsultantActions({
@@ -59,6 +59,15 @@ export function ConsultantActions({
     startTransition(async () => {
       await updateUserRole(profileId, newRole)
       toast.success(`Role changed to ${newRole}`)
+      router.refresh()
+    })
+  }
+
+  function remove() {
+    if (!confirm('Permanently remove this user? This cannot be undone.')) return
+    startTransition(async () => {
+      await deleteProfile(profileId)
+      toast.success('User removed')
       router.refresh()
     })
   }
@@ -121,6 +130,12 @@ export function ConsultantActions({
               Make consultant
             </DropdownMenuItem>
           )}
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={remove} className="text-red-600 focus:text-red-600">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove user
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

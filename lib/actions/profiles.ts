@@ -122,3 +122,25 @@ export async function updateUserRole(profileId: string, role: Role): Promise<voi
 
   await db.from('profiles').update({ role }).eq('id', profileId)
 }
+
+export async function deleteProfile(profileId: string): Promise<void> {
+  const userId = await getClerkUserId()
+  if (!userId) throw new Error('Unauthorized')
+
+  const db = createSupabaseAdminClient()
+  const { data: me } = await db
+    .from('profiles')
+    .select('role')
+    .eq('clerk_user_id', userId)
+    .single()
+
+  if (me?.role !== 'admin') throw new Error('Forbidden')
+
+  // Disassociate consultant from any open orders before removing the profile
+  await db
+    .from('orders')
+    .update({ consultant_id: null })
+    .eq('consultant_id', profileId)
+
+  await db.from('profiles').delete().eq('id', profileId)
+}
