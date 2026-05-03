@@ -126,11 +126,4 @@ create policy "allow_service_role" on public.order_items for all using (true) wi
 create policy "allow_service_role" on public.order_status_history for all using (true) with check (true);
 create policy "allow_service_role" on public.notifications for all using (true) with check (true);
 
--- Seed sample services
-insert into public.services (title, description, price, delivery_days, category, features) values
-  ('Business Strategy Consultation', 'One-on-one strategy session to align your business goals and build a roadmap.', 299.00, 3, 'Strategy', ARRAY['2-hour session', 'Written action plan', 'Follow-up email', '30-day email support']),
-  ('Market Research Report', 'In-depth analysis of your target market, competitors, and opportunities.', 499.00, 7, 'Research', ARRAY['Competitor analysis', 'Market sizing', 'Customer persona', 'PDF report', 'Presentation deck']),
-  ('Business Plan Writing', 'Complete investor-ready business plan with financials and projections.', 799.00, 14, 'Planning', ARRAY['Executive summary', '5-year financial model', 'Market analysis', 'Pitch deck', '2 revisions']),
-  ('Brand Identity Package', 'Full brand identity including name, positioning, messaging, and visual direction.', 599.00, 10, 'Branding', ARRAY['Brand strategy', 'Naming guide', 'Tone of voice', 'Visual direction', 'Brand book']),
-  ('Operations Audit', 'Comprehensive review of your business processes with optimisation recommendations.', 399.00, 5, 'Operations', ARRAY['Process mapping', 'Gap analysis', 'Priority matrix', 'Implementation roadmap'])
-on conflict do nothing;
+-- Services are managed via the admin dashboard — no seed data
