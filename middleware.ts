@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/webhooks']
+const SUPPORT_ONLY_REDIRECTS = ['/client', '/consultant', '/admin/orders']
 
 function hasSession(req: NextRequest): boolean {
   return !!(
@@ -32,6 +33,10 @@ export default function proxy(req: NextRequest) {
     const signIn = new URL('/sign-in', req.url)
     signIn.searchParams.set('redirect_url', pathname)
     return NextResponse.redirect(signIn)
+  }
+
+  if (SUPPORT_ONLY_REDIRECTS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.redirect(new URL('/admin', req.url))
   }
 
   return NextResponse.next()

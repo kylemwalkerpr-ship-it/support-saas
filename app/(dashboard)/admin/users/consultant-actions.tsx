@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { setConsultantStatus, updateUserRole, deleteProfile } from '@/lib/actions/profiles'
+import { setSupportStatus, updateUserRole, deleteProfile } from '@/lib/actions/profiles'
 import type { Role, ProfileStatus } from '@/lib/types'
 
 export function ConsultantActions({
@@ -33,15 +33,15 @@ export function ConsultantActions({
 
   function approve() {
     startTransition(async () => {
-      await setConsultantStatus(profileId, 'active')
-      toast.success('Consultant approved — they can now access the dashboard')
+      await setSupportStatus(profileId, 'active')
+      toast.success('Support agent approved')
       router.refresh()
     })
   }
 
   function suspend() {
     startTransition(async () => {
-      await setConsultantStatus(profileId, 'suspended')
+      await setSupportStatus(profileId, 'suspended')
       toast.success('User suspended')
       router.refresh()
     })
@@ -49,7 +49,7 @@ export function ConsultantActions({
 
   function reactivate() {
     startTransition(async () => {
-      await setConsultantStatus(profileId, 'active')
+      await setSupportStatus(profileId, 'active')
       toast.success('User reactivated')
       router.refresh()
     })
@@ -74,7 +74,7 @@ export function ConsultantActions({
 
   return (
     <div className="flex items-center justify-end gap-2">
-      {/* Quick approve button for pending consultants */}
+      {/* Quick approve button for pending support agents */}
       {status === 'pending' && (
         <Button
           size="sm"
@@ -101,7 +101,7 @@ export function ConsultantActions({
           {status === 'pending' && (
             <DropdownMenuItem onClick={approve}>
               <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-              Approve consultant
+              Approve support agent
             </DropdownMenuItem>
           )}
           {status === 'active' && (
@@ -120,14 +120,9 @@ export function ConsultantActions({
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Change role</DropdownMenuLabel>
 
-          {role !== 'client' && (
-            <DropdownMenuItem onClick={() => changeRole('client')}>
-              Make client
-            </DropdownMenuItem>
-          )}
-          {role !== 'consultant' && (
-            <DropdownMenuItem onClick={() => changeRole('consultant')}>
-              Make consultant
+          {role !== 'support' && (
+            <DropdownMenuItem onClick={() => changeRole('support')}>
+              Make support
             </DropdownMenuItem>
           )}
 

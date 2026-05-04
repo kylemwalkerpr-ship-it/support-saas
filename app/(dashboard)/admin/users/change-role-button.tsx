@@ -16,7 +16,7 @@ import { updateUserRole } from '@/lib/actions/profiles'
 import type { Role } from '@/lib/types'
 import { ChevronDown } from 'lucide-react'
 
-const roles: Role[] = ['client', 'consultant', 'admin']
+const roles: Role[] = ['support', 'admin']
 
 export function ChangeRoleButton({
   profileId,

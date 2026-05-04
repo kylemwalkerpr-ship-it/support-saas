@@ -16,8 +16,12 @@ export default async function DashboardLayout({
   const profile = await getOrCreateProfile()
   if (!profile) redirect('/sign-in')
 
-  // Pending consultants see a holding screen — not the dashboard
-  if (profile.role === 'consultant' && profile.status === 'pending') {
+  if (!['admin', 'support'].includes(profile.role)) {
+    redirect('/sign-in')
+  }
+
+  // Pending support agents see a holding screen — not the dashboard
+  if (profile.role === 'support' && profile.status === 'pending') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center">
@@ -28,9 +32,8 @@ export default async function DashboardLayout({
             Application Under Review
           </h1>
           <p className="text-gray-500 leading-relaxed mb-6">
-            Thank you for applying to become a Yousafe consultant. Our team is
-            reviewing your application and you'll receive confirmation once
-            you're approved.
+            Your support access is waiting for admin approval. You'll receive
+            confirmation once an admin activates your account.
           </p>
           <div className="rounded-xl border border-gray-200 bg-white p-4 flex items-center gap-3 text-left">
             <div className="rounded-lg bg-blue-50 p-2 shrink-0">

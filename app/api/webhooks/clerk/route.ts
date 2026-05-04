@@ -53,13 +53,20 @@ export async function POST(req: Request) {
 
     const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || null
 
-    await db.from('profiles').upsert(
-      {
+    const profilePayload: Record<string, unknown> = {
         clerk_user_id: data.id,
         email: primaryEmail,
         full_name: fullName,
         avatar_url: data.image_url,
-      },
+    }
+
+    if (event.type === 'user.created') {
+      profilePayload.role = 'support'
+      profilePayload.status = 'pending'
+    }
+
+    await db.from('profiles').upsert(
+      profilePayload,
       { onConflict: 'clerk_user_id', ignoreDuplicates: false }
     )
   }

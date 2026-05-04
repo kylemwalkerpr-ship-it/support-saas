@@ -1,15 +1,19 @@
 import { Users, Clock } from 'lucide-react'
+import { redirect } from 'next/navigation'
 import { Header } from '@/components/dashboard/header'
 import { EmptyState } from '@/components/dashboard/empty-state'
-import { getAllProfiles, getPendingConsultants } from '@/lib/actions/profiles'
+import { getAllProfiles, getOrCreateProfile, getPendingSupportAgents } from '@/lib/actions/profiles'
 import { formatDate, getInitials } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConsultantActions } from './consultant-actions'
 
 export default async function AdminUsersPage() {
+  const me = await getOrCreateProfile()
+  if (me?.role !== 'admin') redirect('/admin')
+
   const [profiles, pending] = await Promise.all([
     getAllProfiles(),
-    getPendingConsultants(),
+    getPendingSupportAgents(),
   ])
 
   const statusBadge = (status: string) => {
@@ -24,15 +28,14 @@ export default async function AdminUsersPage() {
   const roleBadge = (role: string) => {
     const map: Record<string, string> = {
       admin: 'bg-amber-100 text-amber-700',
-      consultant: 'bg-purple-100 text-purple-700',
-      client: 'bg-blue-100 text-blue-700',
+      support: 'bg-blue-100 text-blue-700',
     }
     return map[role] ?? 'bg-gray-100 text-gray-700'
   }
 
   return (
     <div>
-      <Header title="Users" subtitle="Manage all users and their access" />
+      <Header title="Support Agents" subtitle="Manage support team access" />
 
       <div className="p-6 space-y-6">
         {/* Pending approval alert */}
@@ -42,7 +45,7 @@ export default async function AdminUsersPage() {
               <Clock className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-semibold text-yellow-800">
-                  {pending.length} consultant{pending.length > 1 ? 's' : ''}{' '}
+                  {pending.length} support agent{pending.length > 1 ? 's' : ''}{' '}
                   waiting for approval
                 </p>
                 <ul className="mt-2 space-y-1">
@@ -60,7 +63,7 @@ export default async function AdminUsersPage() {
         {/* All users table */}
         <Card>
           <CardHeader>
-            <CardTitle>All Users ({profiles.length})</CardTitle>
+            <CardTitle>Support Team ({profiles.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {profiles.length === 0 ? (

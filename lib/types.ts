@@ -1,4 +1,4 @@
-export type Role = 'client' | 'consultant' | 'admin'
+export type Role = 'support' | 'admin'
 export type ProfileStatus = 'active' | 'pending' | 'suspended'
 
 export type OrderStatus =

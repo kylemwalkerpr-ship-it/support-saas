@@ -6,7 +6,6 @@ export default async function DashboardPage() {
 
   if (!profile) redirect('/sign-in')
 
-  if (profile.role === 'admin') redirect('/admin')
-  if (profile.role === 'consultant') redirect('/consultant')
-  redirect('/client')
+  if (profile.role === 'admin' || profile.role === 'support') redirect('/admin')
+  redirect('/sign-in')
 }

@@ -16,7 +16,7 @@ async function requireSupportProfile() {
     .eq('clerk_user_id', userId)
     .single()
 
-  if (!profile || !['admin', 'consultant'].includes(profile.role)) {
+  if (!profile || !['admin', 'support'].includes(profile.role)) {
     throw new Error('Forbidden')
   }
 

@@ -3,8 +3,16 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
 
 export const metadata = {
-  title: 'Yousafe Consultancy',
-  description: 'Professional consultancy services platform',
+  metadataBase: new URL('https://support.yousafeconsultancy.com'),
+  title: 'YouSafe Support',
+  description: 'Support and service management for YouSafe Consultancy clients and consultants.',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: '/',
+  },
 }
 
 export default function RootLayout({

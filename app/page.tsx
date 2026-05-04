@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Users, Briefcase, Shield } from 'lucide-react'
+import { ArrowRight, Users, MessagesSquare, Shield } from 'lucide-react'
 
 export default function LandingPage() {
   return (
@@ -39,15 +39,15 @@ export default function LandingPage() {
           style={{ color: '#3C3B6E', borderColor: 'rgba(60,59,110,0.25)', background: 'rgba(60,59,110,0.06)' }}
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#3C3B6E' }} />
-          Professional Consultancy Platform
+          Support Operations Platform
         </div>
         <h1 className="text-5xl font-bold leading-tight mb-6" style={{ color: '#1F2937' }}>
-          Expert consultancy,<br />
-          <span style={{ color: '#3C3B6E' }}>seamlessly managed.</span>
+          Student support,<br />
+          <span style={{ color: '#3C3B6E' }}>always within reach.</span>
         </h1>
         <p className="text-xl leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: '#4B5563' }}>
-          Connect with specialist consultants, manage projects end-to-end, and
-          get expert work delivered — all in one platform.
+          Monitor live website chats, respond to students and visitors, and
+          manage your support team from one focused console.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
@@ -71,26 +71,26 @@ export default function LandingPage() {
       <div className="border-t px-8 py-20" style={{ borderColor: '#D1D5DB', background: '#F3F4F6' }}>
         <div className="max-w-5xl mx-auto">
           <h2 className="text-center text-3xl font-bold mb-4" style={{ color: '#1F2937' }}>
-            Everything you need
+            Built for support teams
           </h2>
           <p className="text-center mb-16 max-w-xl mx-auto" style={{ color: '#6B7280' }}>
-            A complete system for clients, consultants, and administrators.
+            A focused workspace for live chat operations and support access control.
           </p>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             {[
               {
                 icon: Users,
-                title: 'For Clients',
+                title: 'Live Chat Inbox',
                 description:
-                  'Browse services, place orders, track progress, and approve delivered work — all from your dashboard.',
+                  'See conversations from the website chat bubble, assign requests, reply, and resolve chats.',
                 iconColor: '#3C3B6E',
                 iconBg: 'rgba(60,59,110,0.1)',
               },
               {
-                icon: Briefcase,
-                title: 'For Consultants',
+                icon: MessagesSquare,
+                title: 'For Support Agents',
                 description:
-                  'Claim orders that match your expertise, deliver great work, and build your reputation.',
+                  'Support members only see the chat console after admin approval.',
                 iconColor: '#B22234',
                 iconBg: 'rgba(178,34,52,0.1)',
               },
@@ -98,7 +98,7 @@ export default function LandingPage() {
                 icon: Shield,
                 title: 'For Admins',
                 description:
-                  'Full platform oversight — manage users, monitor all orders, and keep everything running smoothly.',
+                  'Admins can approve, suspend, reactivate, and remove support agents.',
                 iconColor: '#D97706',
                 iconBg: 'rgba(217,119,6,0.1)',
               },

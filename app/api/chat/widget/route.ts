@@ -7,10 +7,20 @@ import {
   shouldEscalateToLiveAgent,
 } from '@/lib/chat/knowledge'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders })
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const message = String(body.message || '').trim()
-  if (!message) return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+  if (!message) return NextResponse.json({ error: 'Message is required' }, { status: 400, headers: corsHeaders })
 
   const db = createSupabaseAdminClient()
   let conversationId = body.conversationId as string | undefined
@@ -28,12 +38,12 @@ export async function POST(request: NextRequest) {
       .select('*')
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
     conversationId = conversation.id
   }
 
   if (!conversationId) {
-    return NextResponse.json({ error: 'Unable to create conversation' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to create conversation' }, { status: 500, headers: corsHeaders })
   }
 
   await db.from('chat_messages').insert({
@@ -99,7 +109,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await loadConversation(conversationId)
-  return NextResponse.json(result)
+  return NextResponse.json(result, { headers: corsHeaders })
 }
 
 async function notifySupport(conversationId: string, message: string) {

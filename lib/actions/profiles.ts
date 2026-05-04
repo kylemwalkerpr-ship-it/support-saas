@@ -20,7 +20,7 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 
   const { data: created } = await db
     .from('profiles')
-    .insert({ clerk_user_id: userId, email: '' })
+    .insert({ clerk_user_id: userId, email: '', role: 'support', status: 'pending' })
     .select('*')
     .single()
 
@@ -32,8 +32,7 @@ export async function setProfileRole(role: Role): Promise<Profile | null> {
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
-  // Consultants start pending until an admin approves them
-  const status = role === 'consultant' ? 'pending' : 'active'
+  const status = role === 'support' ? 'pending' : 'active'
   const { data } = await db
     .from('profiles')
     .update({ role, status })
@@ -44,7 +43,7 @@ export async function setProfileRole(role: Role): Promise<Profile | null> {
   return (data as Profile) ?? null
 }
 
-export async function setConsultantStatus(
+export async function setSupportStatus(
   profileId: string,
   status: 'active' | 'suspended'
 ): Promise<void> {
@@ -63,12 +62,12 @@ export async function setConsultantStatus(
   await db.from('profiles').update({ status }).eq('id', profileId)
 }
 
-export async function getPendingConsultants(): Promise<Profile[]> {
+export async function getPendingSupportAgents(): Promise<Profile[]> {
   const db = createSupabaseAdminClient()
   const { data } = await db
     .from('profiles')
     .select('*')
-    .eq('role', 'consultant')
+    .eq('role', 'support')
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
 
@@ -135,12 +134,6 @@ export async function deleteProfile(profileId: string): Promise<void> {
     .single()
 
   if (me?.role !== 'admin') throw new Error('Forbidden')
-
-  // Disassociate consultant from any open orders before removing the profile
-  await db
-    .from('orders')
-    .update({ consultant_id: null })
-    .eq('consultant_id', profileId)
 
   await db.from('profiles').delete().eq('id', profileId)
 }

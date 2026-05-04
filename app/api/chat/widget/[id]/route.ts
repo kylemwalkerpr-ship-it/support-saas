@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { estimateWaitMinutes } from '@/lib/chat/knowledge'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders })
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -30,5 +40,5 @@ export async function GET(
       position: queuePosition,
       estimatedWaitMinutes: queuePosition ? estimateWaitMinutes(queuePosition, 0) : 0,
     },
-  })
+  }, { headers: corsHeaders })
 }

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Briefcase, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react'
+import { Headphones, ArrowRight, Loader2 } from 'lucide-react'
 import { setProfileRole } from '@/lib/actions/profiles'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -10,22 +10,13 @@ import type { Role } from '@/lib/types'
 
 const roles = [
   {
-    value: 'client' as Role,
-    label: 'Client',
-    description: 'I want to hire consultants and get work done',
-    icon: ShoppingBag,
+    value: 'support' as Role,
+    label: 'Support Agent',
+    description: 'I help visitors and students through live chat',
+    icon: Headphones,
     color: 'border-blue-500 bg-blue-50',
     iconColor: 'text-blue-600',
     iconBg: 'bg-blue-100',
-  },
-  {
-    value: 'consultant' as Role,
-    label: 'Consultant',
-    description: 'I want to offer my expertise and take on projects',
-    icon: Briefcase,
-    color: 'border-purple-500 bg-purple-50',
-    iconColor: 'text-purple-600',
-    iconBg: 'bg-purple-100',
   },
 ]
 
@@ -38,7 +29,7 @@ export default function OnboardingPage() {
     if (!selected) return
     startTransition(async () => {
       await setProfileRole(selected)
-      router.push(selected === 'client' ? '/client' : '/consultant')
+      router.push('/admin')
       router.refresh()
     })
   }
@@ -50,9 +41,9 @@ export default function OnboardingPage() {
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl mb-4" style={{ background: '#3C3B6E' }}>
             <span className="text-2xl font-bold text-white">Y</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">How will you use Yousafe?</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Request support access</h1>
           <p className="mt-2 text-gray-500">
-            Choose your role to get the right experience. You can update this later.
+            Support agents can view and respond to live chat conversations after admin approval.
           </p>
         </div>
 

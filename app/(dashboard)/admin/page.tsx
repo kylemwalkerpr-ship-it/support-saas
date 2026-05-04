@@ -5,8 +5,8 @@ import { SupportDashboard } from '@/components/chat/support-dashboard'
 
 export default async function AdminChatConsolePage() {
   const profile = await getOrCreateProfile()
-  if (!profile || !['admin', 'consultant'].includes(profile.role)) {
-    redirect('/client')
+  if (!profile || !['admin', 'support'].includes(profile.role)) {
+    redirect('/sign-in')
   }
 
   const data = await getSupportDashboardData()
