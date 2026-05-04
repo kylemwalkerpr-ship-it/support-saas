@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "pages:build": "opennextjs-cloudflare build",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "pages:build": "opennextjs-cloudflare build --openNextConfigPath open-next.cloudflare.config.ts",
+    "deploy": "npm run pages:build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.2.8",

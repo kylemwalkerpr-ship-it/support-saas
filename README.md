@@ -26,7 +26,7 @@ npm run deploy
 
 For Cloudflare Workers Builds, use these commands:
 
-- Build command: `npx opennextjs-cloudflare build`
-- Deploy command: `npx opennextjs-cloudflare deploy`
+- Build command: leave blank, or use `npm run pages:build`
+- Deploy command: `npx wrangler deploy`
 
-The deploy step expects the compiled OpenNext config and Worker bundle from the build step. Running only `npx wrangler deploy` in a fresh build environment fails before upload because `.open-next/` has not been generated yet.
+`wrangler.toml` defines a custom build command, so `npx wrangler deploy` generates `.open-next/` before uploading. The OpenNext config intentionally uses `open-next.cloudflare.config.ts` so Wrangler does not bypass its custom build step by auto-delegating directly to `opennextjs-cloudflare deploy`.
