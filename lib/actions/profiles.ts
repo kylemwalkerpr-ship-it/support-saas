@@ -4,6 +4,10 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getClerkUserId } from '@/lib/auth'
 import type { Profile, Role } from '@/lib/types'
 
+function supportAvatarUrl(seed: string) {
+  return `/api/avatar?seed=${encodeURIComponent(seed || 'Yousafe Support')}`
+}
+
 export async function getOrCreateProfile(): Promise<Profile | null> {
   const userId = await getClerkUserId()
   if (!userId) return null
@@ -16,22 +20,18 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
     .eq('clerk_user_id', userId)
     .single()
 
-  if (existing && !['admin', 'support'].includes(existing.role)) {
-    const { data: normalized } = await db
-      .from('profiles')
-      .update({ role: 'support', status: 'pending' })
-      .eq('id', existing.id)
-      .select('*')
-      .single()
-
-    return (normalized as Profile) ?? null
-  }
-
   if (existing) return existing as Profile
 
   const { data: created } = await db
     .from('profiles')
-    .insert({ clerk_user_id: userId, email: '', role: 'support', status: 'pending' })
+    .insert({
+      clerk_user_id: userId,
+      email: '',
+      full_name: 'Yousafe Support',
+      avatar_url: supportAvatarUrl(userId),
+      role: 'support',
+      status: 'pending',
+    })
     .select('*')
     .single()
 
@@ -47,6 +47,32 @@ export async function setProfileRole(role: Role): Promise<Profile | null> {
   const { data } = await db
     .from('profiles')
     .update({ role, status })
+    .eq('clerk_user_id', userId)
+    .select('*')
+    .single()
+
+  return (data as Profile) ?? null
+}
+
+export async function completeSupportProfile(input: {
+  fullName: string
+  avatarSeed: string
+}): Promise<Profile | null> {
+  const userId = await getClerkUserId()
+  if (!userId) return null
+
+  const fullName = input.fullName.trim()
+  if (fullName.length < 2) throw new Error('Full name is required')
+
+  const db = createSupabaseAdminClient()
+  const { data } = await db
+    .from('profiles')
+    .update({
+      role: 'support',
+      status: 'pending',
+      full_name: fullName,
+      avatar_url: supportAvatarUrl(input.avatarSeed || fullName),
+    })
     .eq('clerk_user_id', userId)
     .select('*')
     .single()

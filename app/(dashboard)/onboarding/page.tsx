@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Headphones, ArrowRight, Loader2 } from 'lucide-react'
-import { setProfileRole } from '@/lib/actions/profiles'
+import { completeSupportProfile } from '@/lib/actions/profiles'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/lib/types'
 
@@ -22,13 +23,24 @@ const roles = [
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [selected, setSelected] = useState<Role | null>(null)
+  const [selected, setSelected] = useState<Role | null>('support')
+  const [fullName, setFullName] = useState('')
+  const [avatarSeed, setAvatarSeed] = useState('Yousafe Support')
+  const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
 
   function handleContinue() {
     if (!selected) return
+    if (!fullName.trim()) {
+      setError('Enter your full name so visitors can see who joined.')
+      return
+    }
     startTransition(async () => {
-      await setProfileRole(selected)
+      setError('')
+      await completeSupportProfile({
+        fullName,
+        avatarSeed: avatarSeed || fullName,
+      })
       router.push('/admin')
       router.refresh()
     })
@@ -48,6 +60,40 @@ export default function OnboardingPage() {
         </div>
 
         <div className="space-y-4 mb-8">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-4 flex items-center gap-4">
+              <img
+                src={`/api/avatar?seed=${encodeURIComponent(avatarSeed || fullName || 'Yousafe Support')}`}
+                alt=""
+                className="h-14 w-14 rounded-full border border-gray-200"
+              />
+              <div>
+                <p className="font-semibold text-gray-900">Public agent identity</p>
+                <p className="text-sm text-gray-500">
+                  This name and avatar appear in the chat widget when you join a visitor.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3">
+              <Input
+                value={fullName}
+                onChange={(event) => {
+                  setFullName(event.target.value)
+                  if (!avatarSeed || avatarSeed === 'Yousafe Support') {
+                    setAvatarSeed(event.target.value)
+                  }
+                }}
+                placeholder="Full name"
+              />
+              <Input
+                value={avatarSeed}
+                onChange={(event) => setAvatarSeed(event.target.value)}
+                placeholder="Avatar seed or display nickname"
+              />
+            </div>
+            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          </div>
+
           {roles.map((role) => (
             <button
               key={role.value}

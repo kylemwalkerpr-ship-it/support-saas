@@ -77,33 +77,64 @@ export async function getSupportDashboardData() {
 export async function assignConversation(conversationId: string) {
   const profile = await requireSupportProfile()
   const db = createSupabaseAdminClient()
+  const agentName = profile.full_name || profile.email || 'Yousafe Support'
+  const agentAvatarUrl =
+    profile.avatar_url || `/api/avatar?seed=${encodeURIComponent(agentName)}`
+
+  const { data: current } = await db
+    .from('chat_conversations')
+    .select('metadata')
+    .eq('id', conversationId)
+    .single()
+
+  const metadata =
+    current?.metadata && typeof current.metadata === 'object'
+      ? (current.metadata as Record<string, unknown>)
+      : {}
 
   await db
     .from('chat_conversations')
     .update({
       assigned_to_id: profile.id,
       status: 'assigned',
+      metadata: {
+        ...metadata,
+        assigned_agent_id: profile.id,
+        assigned_agent_name: agentName,
+        assigned_agent_avatar_url: agentAvatarUrl,
+        assigned_at: new Date().toISOString(),
+      },
     })
     .eq('id', conversationId)
 
   await db.from('chat_messages').insert({
     conversation_id: conversationId,
     sender_type: 'system',
-    sender_name: 'Yousafe Support',
-    body: `${profile.full_name || profile.email} joined the conversation.`,
+    sender_id: profile.id,
+    sender_name: agentName,
+    body: `${agentName} joined the conversation.`,
+    metadata: {
+      agent_avatar_url: agentAvatarUrl,
+    },
   })
 }
 
 export async function sendAgentMessage(conversationId: string, body: string) {
   const profile = await requireSupportProfile()
   const db = createSupabaseAdminClient()
+  const agentName = profile.full_name || profile.email || 'Yousafe Support'
+  const agentAvatarUrl =
+    profile.avatar_url || `/api/avatar?seed=${encodeURIComponent(agentName)}`
 
   await db.from('chat_messages').insert({
     conversation_id: conversationId,
     sender_type: 'agent',
     sender_id: profile.id,
-    sender_name: profile.full_name || 'Yousafe Support',
+    sender_name: agentName,
     body,
+    metadata: {
+      agent_avatar_url: agentAvatarUrl,
+    },
   })
 
   await db

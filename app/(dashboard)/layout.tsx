@@ -16,8 +16,35 @@ export default async function DashboardLayout({
   const profile = await getOrCreateProfile()
   if (!profile) redirect('/sign-in')
 
+  if (!['admin', 'support'].includes(profile.role)) {
+    const portalUrl = 'https://portal.yousafeconsultancy.com/dashboard'
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 mb-6">
+            <Mail className="h-8 w-8 text-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">
+            Use Your Portal Dashboard
+          </h1>
+          <p className="text-gray-500 leading-relaxed mb-6">
+            This support workspace is only for approved support staff. Your
+            account is registered as {profile.role}, so continue in the portal.
+          </p>
+          <a
+            href={portalUrl}
+            className="inline-flex rounded-lg bg-[#3C3B6E] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            Open portal dashboard
+          </a>
+        </div>
+        <Toaster richColors position="top-right" />
+      </div>
+    )
+  }
+
   // Pending support agents see a holding screen — not the dashboard
-  if (profile.role !== 'admin' && (profile.role !== 'support' || profile.status === 'pending')) {
+  if (profile.role === 'support' && profile.status === 'pending') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center">

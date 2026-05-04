@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       const { error: aiMessageError } = await db.from('chat_messages').insert({
         conversation_id: conversationId,
         sender_type: 'ai',
-        sender_name: 'Yousafe AI',
+        sender_name: 'Yousafe Site Assistant',
         body: answer,
       })
       if (aiMessageError) {

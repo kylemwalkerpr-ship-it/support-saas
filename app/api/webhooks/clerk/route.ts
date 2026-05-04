@@ -63,6 +63,9 @@ export async function POST(req: Request) {
     if (event.type === 'user.created') {
       profilePayload.role = 'support'
       profilePayload.status = 'pending'
+      profilePayload.avatar_url =
+        data.image_url ||
+        `/api/avatar?seed=${encodeURIComponent(fullName || primaryEmail || data.id)}`
     }
 
     await db.from('profiles').upsert(

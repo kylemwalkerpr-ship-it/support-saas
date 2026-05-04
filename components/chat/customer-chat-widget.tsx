@@ -10,6 +10,14 @@ import type { ChatConversation, ChatMessage } from '@/lib/types'
 
 const STORAGE_KEY = 'yousafe_chat_conversation_id'
 
+function metadataString(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string
+) {
+  const value = metadata?.[key]
+  return typeof value === 'string' && value.trim() ? value : ''
+}
+
 export function CustomerChatWidget() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -21,15 +29,19 @@ export function CustomerChatWidget() {
   const [queue, setQueue] = useState({ position: 0, estimatedWaitMinutes: 0 })
   const bottomRef = useRef<HTMLDivElement>(null)
   const hiddenOnStaffBoard = pathname.startsWith('/admin')
+  const agentName = metadataString(conversation?.metadata, 'assigned_agent_name')
+  const agentAvatarUrl = metadataString(conversation?.metadata, 'assigned_agent_avatar_url')
 
   const statusCopy = useMemo(() => {
     if (!conversation) return 'AI support online'
     if (conversation.status === 'waiting_for_agent') {
       return `Live queue #${queue.position || 1} · about ${queue.estimatedWaitMinutes || 4} min`
     }
-    if (conversation.status === 'assigned') return 'Live agent connected'
+    if (conversation.status === 'assigned') {
+      return agentName ? `${agentName} joined` : 'Live agent connected'
+    }
     return 'AI support online'
-  }, [conversation, queue])
+  }, [agentName, conversation, queue])
 
   useEffect(() => {
     const id = localStorage.getItem(STORAGE_KEY)
@@ -118,12 +130,24 @@ export function CustomerChatWidget() {
       {open && (
         <div className="fixed bottom-5 right-5 z-50 flex h-[620px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 text-white" style={{ background: '#3C3B6E' }}>
-            <div>
+            <div className="flex items-center gap-3">
+              {agentAvatarUrl && conversation?.status === 'assigned' ? (
+                <img
+                  src={agentAvatarUrl}
+                  alt=""
+                  className="h-9 w-9 rounded-full border border-white/25 bg-white/10"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+                  <Bot className="h-4 w-4" />
+                </div>
+              )}
+              <div>
               <div className="flex items-center gap-2 text-sm font-bold">
-                <Bot className="h-4 w-4" />
-                Yousafe Support
+                {agentName && conversation?.status === 'assigned' ? agentName : 'Yousafe Support'}
               </div>
               <p className="mt-0.5 text-xs text-white/75">{statusCopy}</p>
+              </div>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-white/10" aria-label="Close chat">
               <X className="h-5 w-5" />
@@ -144,6 +168,19 @@ export function CustomerChatWidget() {
                   message.sender_type === 'visitor' ? 'justify-end' : 'justify-start'
                 )}
               >
+                {message.sender_type !== 'visitor' && (
+                  <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white">
+                    {metadataString(message.metadata, 'agent_avatar_url') ? (
+                      <img
+                        src={metadataString(message.metadata, 'agent_avatar_url')}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Bot className="h-3.5 w-3.5 text-[#3C3B6E]" />
+                    )}
+                  </div>
+                )}
                 <div
                   className={cn(
                     'max-w-[82%] rounded-lg px-3 py-2 text-sm leading-relaxed',
