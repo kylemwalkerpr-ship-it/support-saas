@@ -17,7 +17,7 @@ export default async function DashboardLayout({
   if (!profile) redirect('/sign-in')
 
   // Pending support agents see a holding screen — not the dashboard
-  if (profile.role === 'support' && profile.status === 'pending') {
+  if (profile.role !== 'admin' && (profile.role !== 'support' || profile.status === 'pending')) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center">

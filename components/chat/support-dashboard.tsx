@@ -2,18 +2,28 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import {
+  AlertTriangle,
   Bot,
   CheckCircle2,
   Clock,
+  Eye,
   Headphones,
   Inbox,
   Mail,
   Send,
   Sparkles,
   UserCheck,
+  XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { assignConversation, resolveConversation, sendAgentMessage } from '@/lib/actions/chat'
+import {
+  assignConversation,
+  closeConversation,
+  escalateConversation,
+  markConversationRead,
+  resolveConversation,
+  sendAgentMessage,
+} from '@/lib/actions/chat'
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import type { ChatConversation, ChatMessage } from '@/lib/types'
@@ -51,6 +61,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
     [data.messages, selected?.id]
   )
   const waiting = data.conversations.filter((conversation) => conversation.status === 'waiting_for_agent')
+  const selectedIsRead = Boolean(selected?.metadata?.read_at)
 
   async function refresh(showToast = false) {
     const response = await fetch('/api/chat/conversations')
@@ -179,7 +190,17 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {selectedIsRead && <Badge variant="outline">Read</Badge>}
                   <StatusBadge status={selected.status} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => runAction(() => markConversationRead(selected.id), 'Ticket marked read')}
+                  >
+                    <Eye className="h-4 w-4" />
+                    Read
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -190,11 +211,29 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                     Join
                   </Button>
                   <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => runAction(() => escalateConversation(selected.id), 'Ticket escalated')}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    Escalate
+                  </Button>
+                  <Button
                     size="sm"
                     disabled={isPending}
                     onClick={() => runAction(() => resolveConversation(selected.id), 'Conversation resolved')}
                   >
                     Resolve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => runAction(() => closeConversation(selected.id), 'Ticket closed')}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Close
                   </Button>
                 </div>
               </div>

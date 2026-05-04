@@ -124,3 +124,67 @@ export async function resolveConversation(conversationId: string) {
     })
     .eq('id', conversationId)
 }
+
+export async function closeConversation(conversationId: string) {
+  await requireSupportProfile()
+  const db = createSupabaseAdminClient()
+  await db
+    .from('chat_conversations')
+    .update({
+      status: 'closed',
+      resolved_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId)
+}
+
+export async function escalateConversation(conversationId: string) {
+  await requireSupportProfile()
+  const db = createSupabaseAdminClient()
+  await db
+    .from('chat_conversations')
+    .update({
+      status: 'waiting_for_agent',
+      priority: 'urgent',
+      requested_agent_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId)
+
+  await db.from('chat_messages').insert({
+    conversation_id: conversationId,
+    sender_type: 'system',
+    sender_name: 'Yousafe Support',
+    body: 'This ticket was escalated for priority support review.',
+  })
+}
+
+export async function markConversationRead(conversationId: string) {
+  const profile = await requireSupportProfile()
+  const db = createSupabaseAdminClient()
+
+  const { data: conversation } = await db
+    .from('chat_conversations')
+    .select('metadata')
+    .eq('id', conversationId)
+    .single()
+
+  const metadata =
+    conversation?.metadata && typeof conversation.metadata === 'object'
+      ? (conversation.metadata as Record<string, unknown>)
+      : {}
+
+  await db
+    .from('chat_conversations')
+    .update({
+      metadata: {
+        ...metadata,
+        read_at: new Date().toISOString(),
+        read_by_id: profile.id,
+      },
+    })
+    .eq('id', conversationId)
+
+  await db
+    .from('chat_notifications')
+    .update({ is_read: true })
+    .eq('conversation_id', conversationId)
+}

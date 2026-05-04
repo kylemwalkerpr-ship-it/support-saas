@@ -9,7 +9,7 @@ const clerkPublishableKey =
 export const metadata = {
   metadataBase: new URL('https://support.yousafeconsultancy.com'),
   title: 'YouSafe Support',
-  description: 'Support and service management for YouSafe Consultancy clients and consultants.',
+  description: 'Customer support inbox and live chat management for YouSafe Consultancy.',
   robots: {
     index: true,
     follow: true,

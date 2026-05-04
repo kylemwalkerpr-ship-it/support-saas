@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/dashboard/empty-state'
 import { getAllProfiles, getOrCreateProfile, getPendingSupportAgents } from '@/lib/actions/profiles'
 import { formatDate, getInitials } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ConsultantActions } from './consultant-actions'
+import { SupportAgentActions } from './support-agent-actions'
 
 export default async function AdminUsersPage() {
   const me = await getOrCreateProfile()
@@ -114,7 +114,7 @@ export default async function AdminUsersPage() {
                           {formatDate(profile.created_at)}
                         </td>
                         <td className="py-3 text-right">
-                          <ConsultantActions
+                          <SupportAgentActions
                             profileId={profile.id}
                             role={profile.role}
                             status={profile.status}

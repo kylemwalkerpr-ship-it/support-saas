@@ -12,9 +12,8 @@ Core destinations:
 - Canada: study permit planning, PGWP awareness, financial proof, settlement planning, and student support.
 
 Platform basics:
-- Students can create a free account, browse services, place orders, message consultants, upload documents, manage billing, and track order progress.
-- Consultants can claim or receive assigned work, communicate with students, submit deliverables, and manage assigned services.
-- Admin/support can monitor conversations, queue live-agent requests, and respond to customers.
+- Website visitors can ask questions through the chat widget and request a live support agent.
+- Admin/support can monitor conversations, queue live-agent requests, reply to customers, mark tickets read, escalate, resolve, and close inquiries.
 
 Support behavior:
 - Give concise, practical answers.

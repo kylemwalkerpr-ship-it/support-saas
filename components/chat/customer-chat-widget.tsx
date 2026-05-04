@@ -20,7 +20,7 @@ export function CustomerChatWidget() {
   const [error, setError] = useState('')
   const [queue, setQueue] = useState({ position: 0, estimatedWaitMinutes: 0 })
   const bottomRef = useRef<HTMLDivElement>(null)
-  const hiddenOnStaffBoard = pathname.startsWith('/admin') || pathname.startsWith('/consultant')
+  const hiddenOnStaffBoard = pathname.startsWith('/admin')
 
   const statusCopy = useMemo(() => {
     if (!conversation) return 'AI support online'

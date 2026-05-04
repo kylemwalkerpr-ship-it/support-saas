@@ -16,11 +16,22 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
     .eq('clerk_user_id', userId)
     .single()
 
+  if (existing && !['admin', 'support'].includes(existing.role)) {
+    const { data: normalized } = await db
+      .from('profiles')
+      .update({ role: 'support', status: 'pending' })
+      .eq('id', existing.id)
+      .select('*')
+      .single()
+
+    return (normalized as Profile) ?? null
+  }
+
   if (existing) return existing as Profile
 
   const { data: created } = await db
     .from('profiles')
-    .insert({ clerk_user_id: userId, email: '', role: 'client', status: 'active' })
+    .insert({ clerk_user_id: userId, email: '', role: 'support', status: 'pending' })
     .select('*')
     .single()
 
