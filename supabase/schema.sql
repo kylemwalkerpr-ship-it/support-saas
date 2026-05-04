@@ -10,7 +10,7 @@ create table if not exists public.profiles (
   email text not null,
   full_name text,
   avatar_url text,
-  role text not null default 'client' check (role in ('client', 'consultant', 'admin')),
+  role text not null default 'client' check (role in ('client', 'consultant', 'support', 'admin')),
   bio text,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
