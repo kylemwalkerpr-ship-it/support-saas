@@ -9,6 +9,10 @@ export default async function AdminChatConsolePage() {
     redirect('/sign-in')
   }
 
+  if (profile.role === 'support' && profile.status !== 'active') {
+    return null
+  }
+
   const data = await getSupportDashboardData()
   return <SupportDashboard initialData={data} />
 }
