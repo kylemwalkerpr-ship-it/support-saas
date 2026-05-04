@@ -17,6 +17,7 @@ export function CustomerChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [queue, setQueue] = useState({ position: 0, estimatedWaitMinutes: 0 })
   const bottomRef = useRef<HTMLDivElement>(null)
   const hiddenOnStaffBoard = pathname.startsWith('/admin') || pathname.startsWith('/consultant')
@@ -68,23 +69,32 @@ export function CustomerChatWidget() {
     if (!text.trim() && !requestAgent) return
     const message = requestAgent ? 'I would like to chat with a live agent.' : text.trim()
     setText('')
+    setError('')
     setLoading(true)
-    const response = await fetch('/api/chat/widget', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        conversationId: conversation?.id,
-        message,
-        requestAgent,
-      }),
-    })
-    const data = await response.json()
-    setLoading(false)
-    if (data.conversation?.id) {
-      localStorage.setItem(STORAGE_KEY, data.conversation.id)
-      setConversation(data.conversation)
-      setMessages(data.messages ?? [])
-      setQueue(data.queue ?? { position: 0, estimatedWaitMinutes: 0 })
+    try {
+      const response = await fetch('/api/chat/widget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: conversation?.id,
+          message,
+          requestAgent,
+        }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data) {
+        throw new Error(data?.error || 'Unable to send your message right now.')
+      }
+      if (data.conversation?.id) {
+        localStorage.setItem(STORAGE_KEY, data.conversation.id)
+        setConversation(data.conversation)
+        setMessages(data.messages ?? [])
+        setQueue(data.queue ?? { position: 0, estimatedWaitMinutes: 0 })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to send your message right now.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -150,6 +160,11 @@ export function CustomerChatWidget() {
               </div>
             ))}
             {loading && <div className="text-xs text-gray-500">Yousafe is typing...</div>}
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {error}
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 

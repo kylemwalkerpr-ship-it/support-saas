@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/webhooks']
+const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/webhooks', '/api/chat/widget']
 const SUPPORT_ONLY_REDIRECTS = ['/client', '/consultant', '/admin/orders']
 
 function hasSession(req: NextRequest): boolean {
