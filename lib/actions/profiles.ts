@@ -13,16 +13,8 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
-
-  const { data: existing } = await db
-    .from('profiles')
-    .select('*')
-    .eq('clerk_user_id', userId)
-    .single()
-
-  if (existing) return existing as Profile
-
   const email = await getClerkSessionEmail()
+
   if (email) {
     const { data: existingByEmail } = await db
       .from('profiles')
@@ -45,6 +37,14 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
       return existingByEmail as Profile
     }
   }
+
+  const { data: existing } = await db
+    .from('profiles')
+    .select('*')
+    .eq('clerk_user_id', userId)
+    .single()
+
+  if (existing) return existing as Profile
 
   const { data: created } = await db
     .from('profiles')
