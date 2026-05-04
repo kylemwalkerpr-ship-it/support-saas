@@ -1,13 +1,18 @@
 import { Briefcase } from 'lucide-react'
+import { redirect } from 'next/navigation'
 import { Header } from '@/components/dashboard/header'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { OrderStatusBadge } from '@/components/dashboard/order-status-badge'
 import { getAvailableOrders } from '@/lib/actions/orders'
+import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { formatCurrency, formatDate, getInitials } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ClaimOrderButton } from './claim-order-button'
 
 export default async function AvailableOrdersPage() {
+  const profile = await getOrCreateProfile()
+  if (profile?.role !== 'consultant') redirect('/dashboard')
+
   const orders = await getAvailableOrders()
 
   return (

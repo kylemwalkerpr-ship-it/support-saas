@@ -16,10 +16,6 @@ export default async function DashboardLayout({
   const profile = await getOrCreateProfile()
   if (!profile) redirect('/sign-in')
 
-  if (!['admin', 'support'].includes(profile.role)) {
-    redirect('/sign-in')
-  }
-
   // Pending support agents see a holding screen — not the dashboard
   if (profile.role === 'support' && profile.status === 'pending') {
     return (

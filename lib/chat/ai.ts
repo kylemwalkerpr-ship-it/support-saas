@@ -3,6 +3,35 @@ import { SYSTEM_KNOWLEDGE } from '@/lib/chat/knowledge'
 const FALLBACK_ANSWER =
   "I can help with Yousafe services, USA and Canada student pathways, portal questions, documents, billing basics, and getting you to a live support agent. For case-specific immigration advice, I can collect your question and connect you with the team."
 
+function extractResponseText(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null
+
+  const outputText = (data as { output_text?: unknown }).output_text
+  if (typeof outputText === 'string' && outputText.trim()) {
+    return outputText.trim()
+  }
+
+  const output = (data as { output?: unknown }).output
+  if (!Array.isArray(output)) return null
+
+  const chunks: string[] = []
+  for (const item of output) {
+    if (!item || typeof item !== 'object') continue
+    const content = (item as { content?: unknown }).content
+    if (!Array.isArray(content)) continue
+
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue
+      const text = (part as { text?: unknown }).text
+      if (typeof text === 'string' && text.trim()) {
+        chunks.push(text.trim())
+      }
+    }
+  }
+
+  return chunks.length ? chunks.join('\n') : null
+}
+
 export async function generateChatAnswer({
   message,
   history,
@@ -39,14 +68,7 @@ export async function generateChatAnswer({
       return FALLBACK_ANSWER
     }
 
-    return (
-      data.output_text ||
-      data.output?.flatMap((item: { content?: { text?: string }[] }) => item.content || [])
-        ?.map((content: { text?: string }) => content.text)
-        ?.filter(Boolean)
-        ?.join('\n') ||
-      FALLBACK_ANSWER
-    )
+    return extractResponseText(data) ?? FALLBACK_ANSWER
   } catch (error) {
     console.error('OpenAI chat response error', error)
     return FALLBACK_ANSWER

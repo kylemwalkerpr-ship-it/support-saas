@@ -61,8 +61,8 @@ export async function POST(req: Request) {
     }
 
     if (event.type === 'user.created') {
-      profilePayload.role = 'support'
-      profilePayload.status = 'pending'
+      profilePayload.role = 'client'
+      profilePayload.status = 'active'
     }
 
     await db.from('profiles').upsert(

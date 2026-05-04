@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Briefcase, ClipboardList, CheckCircle, TrendingUp } from 'lucide-react'
 import { Header } from '@/components/dashboard/header'
 import { StatCard } from '@/components/dashboard/stat-card'
@@ -16,6 +17,7 @@ export default async function ConsultantOverviewPage() {
     getConsultantOrders(),
     getAvailableOrders(),
   ])
+  if (profile?.role !== 'consultant') redirect('/dashboard')
 
   const active = myOrders.filter((o) =>
     ['claimed', 'processing'].includes(o.status)

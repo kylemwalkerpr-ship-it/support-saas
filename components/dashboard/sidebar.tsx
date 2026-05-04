@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
+  Briefcase,
+  ClipboardList,
+  ShoppingCart,
   Users,
   MessagesSquare,
   LogOut,
@@ -21,6 +24,16 @@ interface NavItem {
 }
 
 const navByRole: Record<Role, NavItem[]> = {
+  client: [
+    { label: 'Overview', href: '/client', icon: LayoutDashboard },
+    { label: 'Services', href: '/client/services', icon: ShoppingCart },
+    { label: 'Orders', href: '/client/orders', icon: ClipboardList },
+  ],
+  consultant: [
+    { label: 'Overview', href: '/consultant', icon: LayoutDashboard },
+    { label: 'Available Orders', href: '/consultant/available', icon: Briefcase },
+    { label: 'My Orders', href: '/consultant/my-orders', icon: ClipboardList },
+  ],
   support: [
     { label: 'Chat Console', href: '/admin', icon: MessagesSquare },
   ],
@@ -44,6 +57,8 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
   const roleBadgeColor = {
+    client: 'bg-white/20 text-white',
+    consultant: 'bg-emerald-400/25 text-emerald-100',
     support: 'bg-white/20 text-white',
     admin: 'bg-amber-400/30 text-amber-200',
   }[role]

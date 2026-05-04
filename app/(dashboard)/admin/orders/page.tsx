@@ -1,13 +1,18 @@
 import { ClipboardList } from 'lucide-react'
+import { redirect } from 'next/navigation'
 import { Header } from '@/components/dashboard/header'
 import { OrderStatusBadge } from '@/components/dashboard/order-status-badge'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { getAllOrders } from '@/lib/actions/orders'
+import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdminOrderActions } from './admin-order-actions'
 
 export default async function AdminOrdersPage() {
+  const profile = await getOrCreateProfile()
+  if (profile?.role !== 'admin') redirect('/dashboard')
+
   const orders = await getAllOrders()
   const active = orders.filter((o) => o.status !== 'cart')
 

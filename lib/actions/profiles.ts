@@ -20,7 +20,7 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 
   const { data: created } = await db
     .from('profiles')
-    .insert({ clerk_user_id: userId, email: '', role: 'support', status: 'pending' })
+    .insert({ clerk_user_id: userId, email: '', role: 'client', status: 'active' })
     .select('*')
     .single()
 

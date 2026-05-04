@@ -93,14 +93,17 @@ export async function POST(request: NextRequest) {
         })),
       })
 
-      await db.from('chat_messages').insert({
+      const { error: aiMessageError } = await db.from('chat_messages').insert({
         conversation_id: conversationId,
         sender_type: 'ai',
         sender_name: 'Yousafe AI',
         body: answer,
       })
+      if (aiMessageError) {
+        return NextResponse.json({ error: aiMessageError.message }, { status: 500, headers: corsHeaders })
+      }
 
-      await db
+      const { error: updateError } = await db
         .from('chat_conversations')
         .update({
           status: 'ai_active',
@@ -108,6 +111,9 @@ export async function POST(request: NextRequest) {
           last_message_at: new Date().toISOString(),
         })
         .eq('id', conversationId)
+      if (updateError) {
+        return NextResponse.json({ error: updateError.message }, { status: 500, headers: corsHeaders })
+      }
     }
 
     const result = await loadConversation(conversationId)
@@ -123,7 +129,7 @@ export async function POST(request: NextRequest) {
 
 async function notifySupport(conversationId: string, message: string) {
   const db = createSupabaseAdminClient()
-  await db.from('chat_notifications').insert(
+  const { error } = await db.from('chat_notifications').insert(
     SUPPORT_INBOXES.map((target_email) => ({
       conversation_id: conversationId,
       target_email,
@@ -131,6 +137,7 @@ async function notifySupport(conversationId: string, message: string) {
       message,
     }))
   )
+  if (error) console.error('[chat/widget] support notification failed', error)
 }
 
 async function loadConversation(conversationId: string) {
