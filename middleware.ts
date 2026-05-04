@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 
 export const runtime = 'experimental-edge'
 
-const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/avatar', '/api/webhooks', '/api/chat/widget']
+const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/avatar', '/api/webhooks', '/api/chat/widget', '/api/translate']
 
 function hasSession(req: NextRequest): boolean {
   return !!(
