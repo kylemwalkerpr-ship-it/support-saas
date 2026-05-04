@@ -52,6 +52,19 @@ export async function POST(req: Request) {
     if (!primaryEmail) return new Response('No primary email', { status: 400 })
 
     const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || null
+    const { data: existingByEmail } = await db
+      .from('profiles')
+      .select('id, clerk_user_id, role')
+      .eq('email', primaryEmail)
+      .maybeSingle()
+
+    if (
+      existingByEmail &&
+      existingByEmail.clerk_user_id !== data.id &&
+      existingByEmail.role !== 'support'
+    ) {
+      return new Response('Email already belongs to another role', { status: 409 })
+    }
 
     const profilePayload: Record<string, unknown> = {
         clerk_user_id: data.id,

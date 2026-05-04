@@ -1,7 +1,7 @@
 'use server'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
-import { getClerkUserId } from '@/lib/auth'
+import { getClerkSessionEmail, getClerkUserId } from '@/lib/auth'
 import type { Profile, Role } from '@/lib/types'
 
 function supportAvatarUrl(seed: string) {
@@ -22,11 +22,22 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 
   if (existing) return existing as Profile
 
+  const email = await getClerkSessionEmail()
+  if (email) {
+    const { data: existingByEmail } = await db
+      .from('profiles')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle()
+
+    if (existingByEmail) return existingByEmail as Profile
+  }
+
   const { data: created } = await db
     .from('profiles')
     .insert({
       clerk_user_id: userId,
-      email: '',
+      email: email || '',
       full_name: 'Yousafe Support',
       avatar_url: supportAvatarUrl(userId),
       role: 'support',
