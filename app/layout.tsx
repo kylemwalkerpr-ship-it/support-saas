@@ -1,6 +1,7 @@
 import './globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
 import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
+import { TranslationProvider } from '@/components/translation-provider'
 
 const clerkPublishableKey =
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
@@ -28,8 +29,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ClerkProvider publishableKey={clerkPublishableKey}>
-          {children}
-          <CustomerChatWidget />
+          <TranslationProvider>
+            {children}
+            <CustomerChatWidget />
+          </TranslationProvider>
         </ClerkProvider>
       </body>
     </html>
