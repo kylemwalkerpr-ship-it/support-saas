@@ -127,3 +127,5 @@ create policy "allow_service_role" on public.order_status_history for all using 
 create policy "allow_service_role" on public.notifications for all using (true) with check (true);
 
 -- Services are managed via the admin dashboard — no seed data
+
+-- Support chat tables are defined in supabase/migrations/002_support_chat.sql.

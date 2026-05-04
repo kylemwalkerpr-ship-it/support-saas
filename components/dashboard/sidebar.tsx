@@ -8,7 +8,7 @@ import {
   ClipboardList,
   Briefcase,
   Users,
-  Settings,
+  MessagesSquare,
   LogOut,
   ChevronRight,
   type LucideIcon,
@@ -35,7 +35,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'My Work', href: '/consultant/my-orders', icon: ClipboardList },
   ],
   admin: [
-    { label: 'Overview', href: '/admin', icon: LayoutDashboard },
+    { label: 'Chat Console', href: '/admin', icon: MessagesSquare },
     { label: 'All Orders', href: '/admin/orders', icon: ClipboardList },
     { label: 'Users', href: '/admin/users', icon: Users },
   ],

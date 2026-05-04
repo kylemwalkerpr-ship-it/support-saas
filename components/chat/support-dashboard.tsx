@@ -1,0 +1,353 @@
+'use client'
+
+import { useEffect, useMemo, useState, useTransition } from 'react'
+import {
+  Bot,
+  CheckCircle2,
+  Clock,
+  Headphones,
+  Inbox,
+  Mail,
+  Send,
+  Sparkles,
+  UserCheck,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { assignConversation, resolveConversation, sendAgentMessage } from '@/lib/actions/chat'
+import { supabase } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
+import type { ChatConversation, ChatMessage } from '@/lib/types'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+
+interface SupportDashboardData {
+  conversations: ChatConversation[]
+  messages: ChatMessage[]
+  notifications: { id: string; target_email: string; title: string; message: string; created_at: string }[]
+  metrics: {
+    open: number
+    waiting: number
+    aiHandled: number
+    resolved: number
+    availableAgents: number
+    estimatedWaitMinutes: number
+  }
+}
+
+export function SupportDashboard({ initialData }: { initialData: SupportDashboardData }) {
+  const [data, setData] = useState(initialData)
+  const [selectedId, setSelectedId] = useState(initialData.conversations[0]?.id ?? '')
+  const [reply, setReply] = useState('')
+  const [isPending, startTransition] = useTransition()
+
+  const selected = useMemo(
+    () => data.conversations.find((conversation) => conversation.id === selectedId) ?? data.conversations[0],
+    [data.conversations, selectedId]
+  )
+  const selectedMessages = useMemo(
+    () => data.messages.filter((message) => message.conversation_id === selected?.id),
+    [data.messages, selected?.id]
+  )
+  const waiting = data.conversations.filter((conversation) => conversation.status === 'waiting_for_agent')
+
+  async function refresh(showToast = false) {
+    const response = await fetch('/api/chat/conversations')
+    const next = await response.json()
+    if (!response.ok) {
+      if (showToast) toast.error(next.error || 'Unable to refresh chat data')
+      return
+    }
+    setData(next)
+    if (showToast) toast.success('Chat queue refreshed')
+  }
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('support-chat-ops')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_conversations' }, () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_notifications' }, () => refresh())
+      .subscribe()
+
+    const timer = window.setInterval(() => refresh(), 5000)
+    return () => {
+      window.clearInterval(timer)
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  function runAction(action: () => Promise<void>, success: string) {
+    startTransition(async () => {
+      try {
+        await action()
+        await refresh()
+        toast.success(success)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Action failed')
+      }
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F6F7FB]">
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/90 px-6 py-4 backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3C3B6E] text-white">
+                <Headphones className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-950">Support Chat Console</h1>
+                <p className="text-xs text-gray-500">AI triage, live queue, and customer conversations</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {['support@yousafeconsultancy.com', 'admin@yousafeconsultancy.com', 'info@yousafeconsultancy.com'].map((email) => (
+              <Badge key={email} variant="secondary" className="gap-1 bg-gray-100 text-gray-700">
+                <Mail className="h-3 w-3" />
+                {email}
+              </Badge>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => refresh(true)}>
+              Refresh
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="grid gap-4 p-6 xl:grid-cols-[320px_1fr_300px]">
+        <section className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Metric label="Open" value={data.metrics.open} icon={Inbox} />
+            <Metric label="Waiting" value={data.metrics.waiting} icon={Clock} tone="amber" />
+            <Metric label="AI Active" value={data.metrics.aiHandled} icon={Sparkles} tone="indigo" />
+            <Metric label="Resolved" value={data.metrics.resolved} icon={CheckCircle2} tone="green" />
+          </div>
+
+          <Card className="overflow-hidden">
+            <CardHeader className="p-4">
+              <CardTitle className="text-sm">Live queue</CardTitle>
+              <p className="text-xs text-gray-500">
+                Expected wait: {data.metrics.estimatedWaitMinutes} minutes
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2 p-2 pt-0">
+              {data.conversations.length === 0 && (
+                <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                  No customer messages yet.
+                </div>
+              )}
+              {data.conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => setSelectedId(conversation.id)}
+                  className={cn(
+                    'w-full rounded-lg border p-3 text-left transition-colors',
+                    selected?.id === conversation.id
+                      ? 'border-[#3C3B6E] bg-[#3C3B6E]/5'
+                      : 'border-gray-200 bg-white hover:bg-gray-50'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="truncate text-sm font-semibold text-gray-950">
+                      {conversation.visitor_name || conversation.visitor_email || 'Website visitor'}
+                    </div>
+                    <StatusBadge status={conversation.status} />
+                  </div>
+                  <div className="mt-1 line-clamp-2 text-xs text-gray-500">{conversation.last_message}</div>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="min-h-[720px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          {selected ? (
+            <div className="flex h-full min-h-[720px] flex-col">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-4">
+                <div>
+                  <h2 className="font-bold text-gray-950">
+                    {selected.visitor_name || selected.visitor_email || 'Website visitor'}
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    {selected.visitor_email || 'No email captured'} · {selected.topic}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={selected.status} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => runAction(() => assignConversation(selected.id), 'Conversation assigned')}
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    Join
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => runAction(() => resolveConversation(selected.id), 'Conversation resolved')}
+                  >
+                    Resolve
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto bg-gray-50 p-5">
+                {selectedMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      'flex',
+                      message.sender_type === 'agent' ? 'justify-end' : 'justify-start'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'max-w-[72%] rounded-lg px-3 py-2 text-sm leading-relaxed shadow-sm',
+                        message.sender_type === 'agent'
+                          ? 'bg-[#3C3B6E] text-white'
+                          : message.sender_type === 'ai'
+                            ? 'border border-indigo-100 bg-indigo-50 text-indigo-950'
+                            : message.sender_type === 'system'
+                              ? 'border border-amber-100 bg-amber-50 text-amber-900'
+                              : 'border border-gray-200 bg-white text-gray-800'
+                      )}
+                    >
+                      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase opacity-60">
+                        {message.sender_type === 'ai' && <Bot className="h-3 w-3" />}
+                        {message.sender_name || message.sender_type}
+                      </div>
+                      {message.body}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <form
+                className="border-t border-gray-200 bg-white p-4"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (!reply.trim() || !selected) return
+                  const body = reply.trim()
+                  setReply('')
+                  runAction(() => sendAgentMessage(selected.id, body), 'Reply sent')
+                }}
+              >
+                <Textarea
+                  value={reply}
+                  onChange={(event) => setReply(event.target.value)}
+                  placeholder="Reply as Yousafe Support..."
+                  className="min-h-24 resize-none"
+                />
+                <div className="mt-3 flex justify-end">
+                  <Button disabled={isPending || !reply.trim()} type="submit">
+                    <Send className="h-4 w-4" />
+                    Send reply
+                  </Button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="flex min-h-[720px] items-center justify-center text-gray-500">
+              Select a conversation to begin.
+            </div>
+          )}
+        </section>
+
+        <aside className="space-y-4">
+          <Card>
+            <CardHeader className="p-4">
+              <CardTitle className="text-sm">AI support mode</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 p-4 pt-0 text-sm text-gray-600">
+              <div className="rounded-lg bg-indigo-50 p-3 text-indigo-900">
+                AI answers system-wide questions first and escalates when a customer requests a live agent or asks about account-specific issues.
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <div className="font-bold text-gray-950">{waiting.length}</div>
+                  <div className="text-gray-500">In queue</div>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <div className="font-bold text-gray-950">{data.metrics.availableAgents}</div>
+                  <div className="text-gray-500">Agents online</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="p-4">
+              <CardTitle className="text-sm">Notifications</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 p-4 pt-0">
+              {data.notifications.slice(0, 8).map((notification) => (
+                <div key={notification.id} className="rounded-lg border border-gray-200 p-3">
+                  <div className="text-xs font-bold text-gray-950">{notification.title}</div>
+                  <div className="mt-1 text-xs text-gray-500">{notification.target_email}</div>
+                  <div className="mt-2 line-clamp-2 text-xs text-gray-600">{notification.message}</div>
+                </div>
+              ))}
+              {data.notifications.length === 0 && (
+                <div className="text-sm text-gray-500">No support notifications yet.</div>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
+      </main>
+    </div>
+  )
+}
+
+function Metric({
+  label,
+  value,
+  icon: Icon,
+  tone = 'blue',
+}: {
+  label: string
+  value: number
+  icon: typeof Inbox
+  tone?: 'blue' | 'amber' | 'green' | 'indigo'
+}) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700',
+    amber: 'bg-amber-50 text-amber-700',
+    green: 'bg-green-50 text-green-700',
+    indigo: 'bg-indigo-50 text-indigo-700',
+  }
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-bold text-gray-950">{value}</div>
+            <div className="text-xs font-medium text-gray-500">{label}</div>
+          </div>
+          <div className={cn('rounded-lg p-2', tones[tone])}>
+            <Icon className="h-4 w-4" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function StatusBadge({ status }: { status: ChatConversation['status'] }) {
+  const map = {
+    ai_active: ['AI', 'secondary'],
+    waiting_for_agent: ['Waiting', 'warning'],
+    assigned: ['Live', 'default'],
+    resolved: ['Resolved', 'success'],
+    closed: ['Closed', 'outline'],
+  } as const
+  const [label, variant] = map[status]
+  return <Badge variant={variant}>{label}</Badge>
+}

@@ -1,4 +1,4 @@
-name = "yousafe-saas"
+name = "support-saas"
 main = ".open-next/worker.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]

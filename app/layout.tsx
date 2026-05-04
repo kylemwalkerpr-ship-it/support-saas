@@ -1,5 +1,6 @@
 import './globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
+import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
 
 export const metadata = {
   title: 'Yousafe Consultancy',
@@ -14,7 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider>
+          {children}
+          <CustomerChatWidget />
+        </ClerkProvider>
       </body>
     </html>
   )

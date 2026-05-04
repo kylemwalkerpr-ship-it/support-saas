@@ -86,6 +86,55 @@ export interface Notification {
   created_at: string
 }
 
+export type ChatConversationStatus =
+  | 'ai_active'
+  | 'waiting_for_agent'
+  | 'assigned'
+  | 'resolved'
+  | 'closed'
+
+export type ChatSenderType = 'visitor' | 'ai' | 'agent' | 'system'
+
+export interface ChatConversation {
+  id: string
+  visitor_name: string | null
+  visitor_email: string | null
+  visitor_phone: string | null
+  topic: string
+  status: ChatConversationStatus
+  priority: 'low' | 'normal' | 'high' | 'urgent'
+  assigned_to_id: string | null
+  last_message: string | null
+  last_message_at: string
+  requested_agent_at: string | null
+  resolved_at: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+  updated_at: string
+  assigned_to?: Profile | null
+}
+
+export interface ChatMessage {
+  id: string
+  conversation_id: string
+  sender_type: ChatSenderType
+  sender_id: string | null
+  sender_name: string | null
+  body: string
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface ChatNotification {
+  id: string
+  conversation_id: string | null
+  target_email: string
+  title: string
+  message: string
+  is_read: boolean
+  created_at: string
+}
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cart: 'In Cart',
   queued: 'Queued',
