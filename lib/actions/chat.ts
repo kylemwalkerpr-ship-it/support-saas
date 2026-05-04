@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getClerkUserId } from '@/lib/auth'
+import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { SUPPORT_INBOXES, estimateWaitMinutes } from '@/lib/chat/knowledge'
 import type { ChatConversation, ChatMessage, Profile } from '@/lib/types'
 
@@ -9,12 +10,7 @@ async function requireSupportProfile() {
   const userId = await getClerkUserId()
   if (!userId) throw new Error('Unauthorized')
 
-  const db = createSupabaseAdminClient()
-  const { data: profile } = await db
-    .from('profiles')
-    .select('*')
-    .eq('clerk_user_id', userId)
-    .single()
+  const profile = await getOrCreateProfile()
 
   if (
     !profile ||

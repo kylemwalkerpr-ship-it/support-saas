@@ -30,7 +30,20 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
       .eq('email', email)
       .maybeSingle()
 
-    if (existingByEmail) return existingByEmail as Profile
+    if (existingByEmail) {
+      if (existingByEmail.clerk_user_id !== userId) {
+        const { data: linked } = await db
+          .from('profiles')
+          .update({ clerk_user_id: userId })
+          .eq('id', existingByEmail.id)
+          .select('*')
+          .single()
+
+        if (linked) return linked as Profile
+      }
+
+      return existingByEmail as Profile
+    }
   }
 
   const { data: created } = await db
