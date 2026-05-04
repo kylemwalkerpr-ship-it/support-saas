@@ -17,13 +17,17 @@ export default function SignUpPage() {
             <span className="text-xl font-bold text-white">Y</span>
           </div>
           <h1 className="text-2xl font-bold" style={{ color: '#1F2937' }}>
-            Create your account
+            Request support access
           </h1>
           <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
-            Join Yousafe Consultancy today
+            Create your support account and wait for admin approval.
           </p>
         </div>
-        <SignUp appearance={{ elements: { rootBox: 'w-full' } }} />
+        <SignUp
+          fallbackRedirectUrl="/dashboard"
+          signInUrl="/sign-in"
+          appearance={{ elements: { rootBox: 'w-full' } }}
+        />
       </div>
     </div>
   )

@@ -23,7 +23,11 @@ export default function SignInPage() {
             Sign in to your Yousafe account
           </p>
         </div>
-        <SignIn appearance={{ elements: { rootBox: 'w-full' } }} />
+        <SignIn
+          fallbackRedirectUrl="/dashboard"
+          signUpUrl="/sign-up"
+          appearance={{ elements: { rootBox: 'w-full' } }}
+        />
       </div>
     </div>
   )
