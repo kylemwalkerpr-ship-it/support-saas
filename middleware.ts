@@ -30,10 +30,6 @@ export default clerkMiddleware(
 
     if (!userId) {
       const signIn = new URL('/sign-in', req.url)
-      const returnPath = pathname.startsWith('/admin')
-        ? '/dashboard'
-        : `${pathname}${req.nextUrl.search}`
-      signIn.searchParams.set('redirect_url', returnPath)
       return NextResponse.redirect(signIn)
     }
 

@@ -50,7 +50,6 @@ export default function SignUpPage() {
           </p>
         </div>
         <SignUp
-          fallbackRedirectUrl="/dashboard"
           forceRedirectUrl="/dashboard"
           signInUrl="/sign-in"
           unsafeMetadata={{ requestedRole: 'support' }}
