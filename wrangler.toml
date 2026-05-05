@@ -10,6 +10,9 @@ command = "npx opennextjs-cloudflare build --openNextConfigPath open-next.cloudf
 directory = ".open-next/assets"
 binding = "ASSETS"
 
+[vars]
+CLERK_AUTHORIZED_PARTIES = "https://portal.yousafeconsultancy.com,https://support.yousafeconsultancy.com"
+
 [[routes]]
 pattern = "support.yousafeconsultancy.com"
 custom_domain = true
