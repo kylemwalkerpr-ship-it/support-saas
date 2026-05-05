@@ -61,9 +61,25 @@ export async function POST(req: Request) {
     if (
       existingByEmail &&
       existingByEmail.clerk_user_id !== data.id &&
-      existingByEmail.role !== 'support'
+      !['admin', 'support'].includes(existingByEmail.role)
     ) {
-      return new Response('Email already belongs to another role', { status: 409 })
+      const { error } = await db.from('profiles').insert({
+        clerk_user_id: data.id,
+        email: primaryEmail,
+        full_name: fullName,
+        avatar_url:
+          data.image_url ||
+          `/api/avatar?seed=${encodeURIComponent(fullName || primaryEmail || data.id)}`,
+        role: 'support',
+        status: 'pending',
+      })
+
+      if (error) {
+        console.error('[clerk-webhook] support profile insert failed', error)
+        return new Response('Unable to create support profile', { status: 500 })
+      }
+
+      return new Response('OK', { status: 200 })
     }
 
     const profilePayload: Record<string, unknown> = {
@@ -73,18 +89,21 @@ export async function POST(req: Request) {
         avatar_url: data.image_url,
     }
 
-    if (event.type === 'user.created') {
-      profilePayload.role = 'support'
-      profilePayload.status = 'pending'
-      profilePayload.avatar_url =
-        data.image_url ||
-        `/api/avatar?seed=${encodeURIComponent(fullName || primaryEmail || data.id)}`
-    }
+    profilePayload.role = 'support'
+    if (event.type === 'user.created') profilePayload.status = 'pending'
+    profilePayload.avatar_url =
+      data.image_url ||
+      `/api/avatar?seed=${encodeURIComponent(fullName || primaryEmail || data.id)}`
 
-    await db.from('profiles').upsert(
+    const { error } = await db.from('profiles').upsert(
       profilePayload,
       { onConflict: 'clerk_user_id', ignoreDuplicates: false }
     )
+
+    if (error) {
+      console.error('[clerk-webhook] support profile upsert failed', error)
+      return new Response('Unable to sync support profile', { status: 500 })
+    }
   }
 
   if (event.type === 'user.deleted') {
