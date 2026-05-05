@@ -18,6 +18,9 @@ import {
 import { toast } from 'sonner'
 import {
   assignConversation,
+  assignNextConversation,
+  clearClosedConversations,
+  clearWaitingQueue,
   closeConversation,
   escalateConversation,
   markConversationRead,
@@ -89,12 +92,12 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
     }
   }, [])
 
-  function runAction(action: () => Promise<void>, success: string) {
+  function runAction(action: () => Promise<unknown>, success: string | ((result: unknown) => string)) {
     startTransition(async () => {
       try {
-        await action()
+        const result = await action()
         await refresh()
-        toast.success(success)
+        toast.success(typeof success === 'function' ? success(result) : success)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Action failed')
       }
@@ -126,6 +129,27 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
             <Button variant="outline" size="sm" onClick={() => refresh(true)}>
               Refresh
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending || waiting.length === 0}
+              onClick={() => runAction(() => assignNextConversation(), 'Next waiting chat assigned')}
+            >
+              Join next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending || waiting.length === 0}
+              onClick={() =>
+                runAction(
+                  () => clearWaitingQueue(),
+                  (result) => `${Number(result) || 0} waiting chat${Number(result) === 1 ? '' : 's'} cleared`
+                )
+              }
+            >
+              Clear queue
+            </Button>
           </div>
         </div>
       </header>
@@ -141,7 +165,22 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
 
           <Card className="overflow-hidden">
             <CardHeader className="p-4">
-              <CardTitle className="text-sm">Live queue</CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-sm">Live queue</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending || waiting.length === 0}
+                  onClick={() =>
+                    runAction(
+                      () => clearWaitingQueue(),
+                      (result) => `${Number(result) || 0} waiting chat${Number(result) === 1 ? '' : 's'} cleared`
+                    )
+                  }
+                >
+                  Clear
+                </Button>
+              </div>
               <p className="text-xs text-gray-500">
                 Expected wait: {data.metrics.estimatedWaitMinutes} minutes
               </p>
@@ -195,7 +234,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={isPending}
+                    disabled={isPending || selected.status === 'closed'}
                     onClick={() => runAction(() => markConversationRead(selected.id), 'Ticket marked read')}
                   >
                     <Eye className="h-4 w-4" />
@@ -204,7 +243,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={isPending}
+                    disabled={isPending || selected.status === 'closed' || selected.status === 'resolved'}
                     onClick={() => runAction(() => assignConversation(selected.id), 'Conversation assigned')}
                   >
                     <UserCheck className="h-4 w-4" />
@@ -221,7 +260,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   </Button>
                   <Button
                     size="sm"
-                    disabled={isPending}
+                    disabled={isPending || selected.status === 'closed' || selected.status === 'resolved'}
                     onClick={() => runAction(() => resolveConversation(selected.id), 'Conversation resolved')}
                   >
                     Resolve
@@ -229,7 +268,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={isPending}
+                    disabled={isPending || selected.status === 'closed'}
                     onClick={() => runAction(() => closeConversation(selected.id), 'Ticket closed')}
                   >
                     <XCircle className="h-4 w-4" />
@@ -279,14 +318,28 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   runAction(() => sendAgentMessage(selected.id, body), 'Reply sent')
                 }}
               >
-                <Textarea
-                  value={reply}
-                  onChange={(event) => setReply(event.target.value)}
-                  placeholder="Reply as Yousafe Support..."
-                  className="min-h-24 resize-none"
-                />
+                {selected.status === 'closed' || selected.status === 'resolved' ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    This conversation is {selected.status}. Reopen by escalating it if the visitor needs more help.
+                  </div>
+                ) : (
+                  <Textarea
+                    value={reply}
+                    onChange={(event) => setReply(event.target.value)}
+                    placeholder="Reply as Yousafe Support..."
+                    className="min-h-24 resize-none"
+                  />
+                )}
                 <div className="mt-3 flex justify-end">
-                  <Button disabled={isPending || !reply.trim()} type="submit">
+                  <Button
+                    disabled={
+                      isPending ||
+                      !reply.trim() ||
+                      selected.status === 'closed' ||
+                      selected.status === 'resolved'
+                    }
+                    type="submit"
+                  >
                     <Send className="h-4 w-4" />
                     Send reply
                   </Button>
@@ -324,7 +377,27 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
 
           <Card>
             <CardHeader className="p-4">
-              <CardTitle className="text-sm">Notifications</CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-sm">Notifications</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    isPending ||
+                    data.conversations.every(
+                      (conversation) => conversation.status !== 'closed' && conversation.status !== 'resolved'
+                    )
+                  }
+                  onClick={() =>
+                    runAction(
+                      () => clearClosedConversations(),
+                      (result) => `${Number(result) || 0} closed chat${Number(result) === 1 ? '' : 's'} removed`
+                    )
+                  }
+                >
+                  Clear closed
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-2 p-4 pt-0">
               {data.notifications.slice(0, 8).map((notification) => (

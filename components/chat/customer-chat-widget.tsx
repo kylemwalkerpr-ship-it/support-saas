@@ -33,6 +33,8 @@ export function CustomerChatWidget() {
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up')
+  const conversationClosed =
+    conversation?.status === 'closed' || conversation?.status === 'resolved'
   const agentName = metadataString(conversation?.metadata, 'assigned_agent_name')
   const agentAvatarUrl = metadataString(conversation?.metadata, 'assigned_agent_avatar_url')
 
@@ -112,6 +114,15 @@ export function CustomerChatWidget() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function startNewConversation() {
+    localStorage.removeItem(STORAGE_KEY)
+    setConversation(null)
+    setMessages([])
+    setQueue({ position: 0, estimatedWaitMinutes: 0 })
+    setError('')
+    setText('')
   }
 
   return (
@@ -206,20 +217,37 @@ export function CustomerChatWidget() {
                 {error}
               </div>
             )}
+            {conversationClosed && (
+              <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-600">
+                This conversation is {conversation.status}. Start a new chat if you still need help.
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
           <div className="border-t border-gray-200 bg-white p-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mb-2 w-full"
-              onClick={() => sendMessage(true)}
-            >
-              <Headphones className="h-4 w-4" />
-              Chat with a live agent
-            </Button>
+            {conversationClosed ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mb-2 w-full"
+                onClick={startNewConversation}
+              >
+                New chat
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mb-2 w-full"
+                onClick={() => sendMessage(true)}
+              >
+                <Headphones className="h-4 w-4" />
+                Chat with a live agent
+              </Button>
+            )}
             <form
               className="flex gap-2"
               onSubmit={(event) => {
@@ -232,8 +260,9 @@ export function CustomerChatWidget() {
                 onChange={(event) => setText(event.target.value)}
                 placeholder="Type your question..."
                 className="h-10"
+                disabled={conversationClosed}
               />
-              <Button type="submit" size="icon" disabled={loading || !text.trim()}>
+              <Button type="submit" size="icon" disabled={loading || !text.trim() || conversationClosed}>
                 <Send className="h-4 w-4" />
               </Button>
             </form>

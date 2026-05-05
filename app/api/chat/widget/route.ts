@@ -25,6 +25,21 @@ export async function POST(request: NextRequest) {
 
     const db = createSupabaseAdminClient()
     let conversationId = body.conversationId as string | undefined
+    let existingStatus: string | null = null
+
+    if (conversationId) {
+      const { data: existingConversation } = await db
+        .from('chat_conversations')
+        .select('status')
+        .eq('id', conversationId)
+        .maybeSingle()
+
+      existingStatus = existingConversation?.status ?? null
+      if (!existingConversation || ['resolved', 'closed'].includes(existingStatus ?? '')) {
+        conversationId = undefined
+        existingStatus = null
+      }
+    }
 
     if (!conversationId) {
       const { data: conversation, error } = await db
@@ -35,12 +50,14 @@ export async function POST(request: NextRequest) {
           visitor_phone: body.visitor?.phone || null,
           topic: body.topic || 'support',
           last_message: message,
+          last_message_at: new Date().toISOString(),
         })
         .select('*')
         .single()
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
       conversationId = conversation.id
+      existingStatus = conversation.status
     }
 
     if (!conversationId) {
@@ -54,6 +71,30 @@ export async function POST(request: NextRequest) {
       body: message,
     })
     if (visitorError) return NextResponse.json({ error: visitorError.message }, { status: 500, headers: corsHeaders })
+
+    if (existingStatus === 'assigned' || existingStatus === 'waiting_for_agent') {
+      const nextStatus = body.requestAgent === true ? 'waiting_for_agent' : existingStatus
+      const updatePayload: Record<string, unknown> = {
+        status: nextStatus,
+        last_message: message,
+        last_message_at: new Date().toISOString(),
+      }
+      if (body.requestAgent === true) {
+        updatePayload.priority = 'high'
+        updatePayload.requested_agent_at = new Date().toISOString()
+      }
+
+      const { error: updateError } = await db
+        .from('chat_conversations')
+        .update(updatePayload)
+        .eq('id', conversationId)
+
+      if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500, headers: corsHeaders })
+      if (nextStatus === 'waiting_for_agent') await notifySupport(conversationId, message)
+
+      const result = await loadConversation(conversationId)
+      return NextResponse.json(result, { headers: corsHeaders })
+    }
 
     const { data: history } = await db
       .from('chat_messages')
@@ -96,7 +137,7 @@ export async function POST(request: NextRequest) {
       const { error: aiMessageError } = await db.from('chat_messages').insert({
         conversation_id: conversationId,
         sender_type: 'ai',
-        sender_name: 'Yousafe Site Assistant',
+        sender_name: 'Yousafe Chat Agent',
         body: answer,
       })
       if (aiMessageError) {

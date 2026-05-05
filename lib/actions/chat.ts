@@ -24,8 +24,17 @@ async function requireSupportProfile() {
 }
 
 export async function getSupportDashboardData() {
-  await requireSupportProfile()
+  const profile = await requireSupportProfile()
   const db = createSupabaseAdminClient()
+
+  await db.from('support_presence').upsert(
+    {
+      profile_id: profile.id,
+      status: 'available',
+      last_seen_at: new Date().toISOString(),
+    },
+    { onConflict: 'profile_id', ignoreDuplicates: false }
+  )
 
   const [{ data: conversations }, { data: messages }, { data: presence }, { data: notifications }] =
     await Promise.all([
@@ -70,9 +79,33 @@ export async function getSupportDashboardData() {
   }
 }
 
+async function requireConversation(conversationId: string) {
+  const db = createSupabaseAdminClient()
+  const { data, error } = await db
+    .from('chat_conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .single()
+
+  if (error || !data) throw new Error('Conversation not found')
+  return data as ChatConversation
+}
+
+async function insertSystemMessage(conversationId: string, body: string, senderName = 'Yousafe Support') {
+  const db = createSupabaseAdminClient()
+  const { error } = await db.from('chat_messages').insert({
+    conversation_id: conversationId,
+    sender_type: 'system',
+    sender_name: senderName,
+    body,
+  })
+  if (error) throw new Error(error.message)
+}
+
 export async function assignConversation(conversationId: string) {
   const profile = await requireSupportProfile()
   const db = createSupabaseAdminClient()
+  await requireConversation(conversationId)
   const agentName = profile.full_name || profile.email || 'Yousafe Support'
   const agentAvatarUrl =
     profile.avatar_url || `/api/avatar?seed=${encodeURIComponent(agentName)}`
@@ -88,7 +121,7 @@ export async function assignConversation(conversationId: string) {
       ? (current.metadata as Record<string, unknown>)
       : {}
 
-  await db
+  const { error: updateError } = await db
     .from('chat_conversations')
     .update({
       assigned_to_id: profile.id,
@@ -102,8 +135,9 @@ export async function assignConversation(conversationId: string) {
       },
     })
     .eq('id', conversationId)
+  if (updateError) throw new Error(updateError.message)
 
-  await db.from('chat_messages').insert({
+  const { error: messageError } = await db.from('chat_messages').insert({
     conversation_id: conversationId,
     sender_type: 'system',
     sender_id: profile.id,
@@ -113,6 +147,43 @@ export async function assignConversation(conversationId: string) {
       agent_avatar_url: agentAvatarUrl,
     },
   })
+  if (messageError) throw new Error(messageError.message)
+}
+
+export async function assignNextConversation() {
+  const profile = await requireSupportProfile()
+  const db = createSupabaseAdminClient()
+  const { data, error } = await db
+    .from('chat_conversations')
+    .select('id, priority, requested_agent_at, last_message_at')
+    .eq('status', 'waiting_for_agent')
+    .order('requested_agent_at', { ascending: true })
+    .limit(50)
+
+  if (error) throw new Error(error.message)
+  if (!data?.length) throw new Error('No customers are waiting')
+
+  const priorityWeight = { urgent: 4, high: 3, normal: 2, low: 1 } as Record<string, number>
+  const next = [...data].sort((a, b) => {
+    const priorityDelta = (priorityWeight[b.priority] ?? 0) - (priorityWeight[a.priority] ?? 0)
+    if (priorityDelta !== 0) return priorityDelta
+    const aTime = Date.parse(a.requested_agent_at ?? a.last_message_at ?? '')
+    const bTime = Date.parse(b.requested_agent_at ?? b.last_message_at ?? '')
+    return aTime - bTime
+  })[0]
+
+  await assignConversation(next.id)
+  await db.from('support_presence').upsert(
+    {
+      profile_id: profile.id,
+      status: 'busy',
+      active_conversations: 1,
+      last_seen_at: new Date().toISOString(),
+    },
+    { onConflict: 'profile_id', ignoreDuplicates: false }
+  )
+
+  return next.id as string
 }
 
 export async function sendAgentMessage(conversationId: string, body: string) {
@@ -122,7 +193,8 @@ export async function sendAgentMessage(conversationId: string, body: string) {
   const agentAvatarUrl =
     profile.avatar_url || `/api/avatar?seed=${encodeURIComponent(agentName)}`
 
-  await db.from('chat_messages').insert({
+  await requireConversation(conversationId)
+  const { error: messageError } = await db.from('chat_messages').insert({
     conversation_id: conversationId,
     sender_type: 'agent',
     sender_id: profile.id,
@@ -132,8 +204,9 @@ export async function sendAgentMessage(conversationId: string, body: string) {
       agent_avatar_url: agentAvatarUrl,
     },
   })
+  if (messageError) throw new Error(messageError.message)
 
-  await db
+  const { error: updateError } = await db
     .from('chat_conversations')
     .update({
       status: 'assigned',
@@ -142,36 +215,46 @@ export async function sendAgentMessage(conversationId: string, body: string) {
       last_message_at: new Date().toISOString(),
     })
     .eq('id', conversationId)
+  if (updateError) throw new Error(updateError.message)
 }
 
 export async function resolveConversation(conversationId: string) {
   await requireSupportProfile()
   const db = createSupabaseAdminClient()
-  await db
+  await requireConversation(conversationId)
+  const { error } = await db
     .from('chat_conversations')
     .update({
       status: 'resolved',
       resolved_at: new Date().toISOString(),
     })
     .eq('id', conversationId)
+  if (error) throw new Error(error.message)
+  await insertSystemMessage(conversationId, 'This conversation was marked resolved. Reply again if you still need help.')
+  await db.from('chat_notifications').update({ is_read: true }).eq('conversation_id', conversationId)
 }
 
 export async function closeConversation(conversationId: string) {
   await requireSupportProfile()
   const db = createSupabaseAdminClient()
-  await db
+  await requireConversation(conversationId)
+  const { error } = await db
     .from('chat_conversations')
     .update({
       status: 'closed',
       resolved_at: new Date().toISOString(),
     })
     .eq('id', conversationId)
+  if (error) throw new Error(error.message)
+  await insertSystemMessage(conversationId, 'This conversation was closed by Yousafe Support.')
+  await db.from('chat_notifications').update({ is_read: true }).eq('conversation_id', conversationId)
 }
 
 export async function escalateConversation(conversationId: string) {
   await requireSupportProfile()
   const db = createSupabaseAdminClient()
-  await db
+  await requireConversation(conversationId)
+  const { error: updateError } = await db
     .from('chat_conversations')
     .update({
       status: 'waiting_for_agent',
@@ -179,13 +262,9 @@ export async function escalateConversation(conversationId: string) {
       requested_agent_at: new Date().toISOString(),
     })
     .eq('id', conversationId)
+  if (updateError) throw new Error(updateError.message)
 
-  await db.from('chat_messages').insert({
-    conversation_id: conversationId,
-    sender_type: 'system',
-    sender_name: 'Yousafe Support',
-    body: 'This ticket was escalated for priority support review.',
-  })
+  await insertSystemMessage(conversationId, 'This ticket was escalated for priority support review.')
 }
 
 export async function markConversationRead(conversationId: string) {
@@ -203,7 +282,7 @@ export async function markConversationRead(conversationId: string) {
       ? (conversation.metadata as Record<string, unknown>)
       : {}
 
-  await db
+  const { error: updateError } = await db
     .from('chat_conversations')
     .update({
       metadata: {
@@ -213,9 +292,68 @@ export async function markConversationRead(conversationId: string) {
       },
     })
     .eq('id', conversationId)
+  if (updateError) throw new Error(updateError.message)
 
   await db
     .from('chat_notifications')
     .update({ is_read: true })
     .eq('conversation_id', conversationId)
+}
+
+export async function clearWaitingQueue() {
+  const profile = await requireSupportProfile()
+  const db = createSupabaseAdminClient()
+  const { data: waiting, error: loadError } = await db
+    .from('chat_conversations')
+    .select('id')
+    .eq('status', 'waiting_for_agent')
+
+  if (loadError) throw new Error(loadError.message)
+  if (!waiting?.length) return 0
+
+  const ids = waiting.map((conversation) => conversation.id)
+  const now = new Date().toISOString()
+  const { error: updateError } = await db
+    .from('chat_conversations')
+    .update({
+      status: 'closed',
+      resolved_at: now,
+      last_message: 'This chat queue item was cleared by Yousafe Support.',
+      last_message_at: now,
+    })
+    .in('id', ids)
+
+  if (updateError) throw new Error(updateError.message)
+
+  const agentName = profile.full_name || profile.email || 'Yousafe Support'
+  const { error: messageError } = await db.from('chat_messages').insert(
+    ids.map((conversationId) => ({
+      conversation_id: conversationId,
+      sender_type: 'system',
+      sender_id: profile.id,
+      sender_name: agentName,
+      body: 'This waiting chat was cleared by Yousafe Support. Please start a new chat if you still need help.',
+    }))
+  )
+  if (messageError) throw new Error(messageError.message)
+
+  await db.from('chat_notifications').update({ is_read: true }).in('conversation_id', ids)
+  return ids.length
+}
+
+export async function clearClosedConversations() {
+  await requireSupportProfile()
+  const db = createSupabaseAdminClient()
+  const { data: closed, error: loadError } = await db
+    .from('chat_conversations')
+    .select('id')
+    .in('status', ['resolved', 'closed'])
+
+  if (loadError) throw new Error(loadError.message)
+  if (!closed?.length) return 0
+
+  const ids = closed.map((conversation) => conversation.id)
+  const { error } = await db.from('chat_conversations').delete().in('id', ids)
+  if (error) throw new Error(error.message)
+  return ids.length
 }
