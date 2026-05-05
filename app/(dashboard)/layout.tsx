@@ -3,7 +3,11 @@ import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { getClerkUserId } from '@/lib/auth'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Toaster } from 'sonner'
-import { Clock, Mail } from 'lucide-react'
+import { AlertTriangle, Clock, Mail } from 'lucide-react'
+
+function isRecoveryEmail(email: string | null | undefined) {
+  return !!email && email.endsWith('@support.yousafe.local')
+}
 
 export default async function DashboardLayout({
   children,
@@ -14,7 +18,39 @@ export default async function DashboardLayout({
   if (!userId) redirect('/sign-in')
 
   const profile = await getOrCreateProfile()
-  if (!profile) redirect('/sign-in')
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 mb-6">
+            <AlertTriangle className="h-8 w-8 text-amber-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">
+            Account Refresh Needed
+          </h1>
+          <p className="text-gray-500 leading-relaxed mb-6">
+            Your support session is active, but we could not finish refreshing
+            your support profile. Sign in again to rebuild the session cleanly.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <a
+              href="/sign-in"
+              className="inline-flex justify-center rounded-lg bg-[#3C3B6E] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Sign in again
+            </a>
+            <a
+              href="mailto:support@yousafeconsultancy.com"
+              className="inline-flex justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-white"
+            >
+              Contact support
+            </a>
+          </div>
+        </div>
+        <Toaster richColors position="top-right" />
+      </div>
+    )
+  }
 
   if (!['admin', 'support'].includes(profile.role)) {
     const portalUrl = 'https://portal.yousafeconsultancy.com/dashboard'
@@ -66,7 +102,9 @@ export default async function DashboardLayout({
               <p className="text-sm font-medium text-gray-900">
                 We'll notify you at
               </p>
-              <p className="text-sm text-gray-500">{profile.email}</p>
+              <p className="text-sm text-gray-500">
+                {isRecoveryEmail(profile.email) ? 'your account email' : profile.email}
+              </p>
             </div>
           </div>
           <p className="text-xs text-gray-400 mt-6">

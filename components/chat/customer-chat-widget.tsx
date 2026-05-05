@@ -28,7 +28,11 @@ export function CustomerChatWidget() {
   const [error, setError] = useState('')
   const [queue, setQueue] = useState({ position: 0, estimatedWaitMinutes: 0 })
   const bottomRef = useRef<HTMLDivElement>(null)
-  const hiddenOnStaffBoard = pathname.startsWith('/admin')
+  const hiddenOnStaffBoard =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/sign-up')
   const agentName = metadataString(conversation?.metadata, 'assigned_agent_name')
   const agentAvatarUrl = metadataString(conversation?.metadata, 'assigned_agent_avatar_url')
 

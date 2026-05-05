@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export const runtime = 'experimental-edge'
-
 const PUBLIC_PATHS = ['/sign-in', '/sign-up', '/api/avatar', '/api/webhooks', '/api/chat/widget', '/api/translate']
 
 function hasSession(req: NextRequest): boolean {
@@ -31,7 +29,10 @@ export default function middleware(req: NextRequest) {
 
   if (!hasSession(req)) {
     const signIn = new URL('/sign-in', req.url)
-    signIn.searchParams.set('redirect_url', pathname)
+    signIn.searchParams.set(
+      'redirect_url',
+      `${pathname}${req.nextUrl.search}`
+    )
     return NextResponse.redirect(signIn)
   }
 

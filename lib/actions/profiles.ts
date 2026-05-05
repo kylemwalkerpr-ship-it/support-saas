@@ -8,58 +8,113 @@ function supportAvatarUrl(seed: string) {
   return `/api/avatar?seed=${encodeURIComponent(seed || 'Yousafe Support')}`
 }
 
+function supportRecoveryEmail(userId: string) {
+  return `${userId}@support.yousafe.local`
+}
+
+function isRecoveryEmail(email: string | null | undefined) {
+  return !!email && email.endsWith('@support.yousafe.local')
+}
+
 export async function getOrCreateProfile(): Promise<Profile | null> {
   const userId = await getClerkUserId()
   if (!userId) return null
 
-  const db = createSupabaseAdminClient()
-  const email = await getClerkSessionEmail()
+  try {
+    const db = createSupabaseAdminClient()
+    const sessionEmail = await getClerkSessionEmail()
+    const email = sessionEmail ?? supportRecoveryEmail(userId)
 
-  if (email) {
-    const { data: existingByEmail } = await db
+    if (sessionEmail) {
+      const { data: existingByEmail, error: emailLookupError } = await db
+        .from('profiles')
+        .select('*')
+        .eq('email', sessionEmail)
+        .maybeSingle()
+
+      if (emailLookupError) {
+        console.error('[profiles] email lookup failed', emailLookupError)
+      }
+
+      if (existingByEmail) {
+        if (existingByEmail.clerk_user_id !== userId) {
+          const { data: linked, error: linkError } = await db
+            .from('profiles')
+            .update({ clerk_user_id: userId })
+            .eq('id', existingByEmail.id)
+            .select('*')
+            .single()
+
+          if (linkError) console.error('[profiles] relink by email failed', linkError)
+          if (linked) return linked as Profile
+        }
+
+        return existingByEmail as Profile
+      }
+    }
+
+    const { data: existing, error: existingError } = await db
       .from('profiles')
       .select('*')
-      .eq('email', email)
+      .eq('clerk_user_id', userId)
       .maybeSingle()
 
-    if (existingByEmail) {
-      if (existingByEmail.clerk_user_id !== userId) {
-        const { data: linked } = await db
+    if (existingError) {
+      console.error('[profiles] clerk lookup failed', existingError)
+    }
+
+    if (existing) {
+      if (sessionEmail && isRecoveryEmail(existing.email)) {
+        const { data: refreshed, error: refreshError } = await db
           .from('profiles')
-          .update({ clerk_user_id: userId })
-          .eq('id', existingByEmail.id)
+          .update({ email: sessionEmail })
+          .eq('id', existing.id)
           .select('*')
           .single()
 
-        if (linked) return linked as Profile
+        if (refreshError) console.error('[profiles] email refresh failed', refreshError)
+        if (refreshed) return refreshed as Profile
       }
 
-      return existingByEmail as Profile
+      return existing as Profile
     }
-  }
 
-  const { data: existing } = await db
-    .from('profiles')
-    .select('*')
-    .eq('clerk_user_id', userId)
-    .single()
-
-  if (existing) return existing as Profile
-
-  const { data: created } = await db
-    .from('profiles')
-    .insert({
+    const payload = {
       clerk_user_id: userId,
-      email: email || '',
+      email,
       full_name: 'Yousafe Support',
       avatar_url: supportAvatarUrl(userId),
       role: 'support',
       status: 'pending',
-    })
-    .select('*')
-    .single()
+    }
 
-  return (created as Profile) ?? null
+    const { data: created, error: createError } = await db
+      .from('profiles')
+      .upsert(payload, { onConflict: 'clerk_user_id', ignoreDuplicates: false })
+      .select('*')
+      .single()
+
+    if (!createError && created) return created as Profile
+
+    console.error('[profiles] profile upsert failed', createError)
+
+    if (sessionEmail) {
+      const { data: relinked, error: relinkError } = await db
+        .from('profiles')
+        .update({ clerk_user_id: userId })
+        .eq('email', sessionEmail)
+        .select('*')
+        .maybeSingle()
+
+      if (relinkError) console.error('[profiles] final relink failed', relinkError)
+      if (relinked) return relinked as Profile
+    }
+
+    return null
+  } catch (error) {
+    console.error('[profiles] getOrCreateProfile recovery failed', error)
+    return null
+  }
 }
 
 export async function setProfileRole(role: Role): Promise<Profile | null> {

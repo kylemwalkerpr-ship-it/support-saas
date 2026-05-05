@@ -28,7 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClerkProvider publishableKey={clerkPublishableKey}>
+        <ClerkProvider
+          publishableKey={clerkPublishableKey}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+          signInFallbackRedirectUrl="/dashboard"
+          signUpFallbackRedirectUrl="/dashboard"
+        >
           <TranslationProvider>
             {children}
             <CustomerChatWidget />

@@ -25,6 +25,7 @@ export default function SignInPage() {
         </div>
         <SignIn
           fallbackRedirectUrl="/dashboard"
+          forceRedirectUrl="/dashboard"
           signUpUrl="/sign-up"
           appearance={{ elements: { rootBox: 'w-full' } }}
         />
