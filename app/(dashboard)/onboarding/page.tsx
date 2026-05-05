@@ -41,7 +41,7 @@ export default function OnboardingPage() {
         fullName,
         avatarSeed: avatarSeed || fullName,
       })
-      router.push('/admin')
+      router.push('/dashboard')
       router.refresh()
     })
   }

@@ -9,7 +9,7 @@ import { SupportAgentActions } from './support-agent-actions'
 
 export default async function AdminUsersPage() {
   const me = await getOrCreateProfile()
-  if (me?.role !== 'admin') redirect('/admin')
+  if (me?.role !== 'admin') redirect('/dashboard')
 
   const [profiles, pending] = await Promise.all([
     getAllProfiles(),

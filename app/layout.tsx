@@ -32,7 +32,9 @@ export default function RootLayout({
           publishableKey={clerkPublishableKey}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
+          signInForceRedirectUrl="/dashboard"
           signInFallbackRedirectUrl="/dashboard"
+          signUpForceRedirectUrl="/dashboard"
           signUpFallbackRedirectUrl="/dashboard"
         >
           <TranslationProvider>

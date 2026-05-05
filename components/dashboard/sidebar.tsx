@@ -23,10 +23,10 @@ const navByRole: Record<Role, NavItem[]> = {
   client: [],
   consultant: [],
   support: [
-    { label: 'Support Inbox', href: '/admin', icon: MessagesSquare },
+    { label: 'Support Inbox', href: '/dashboard', icon: MessagesSquare },
   ],
   admin: [
-    { label: 'Support Inbox', href: '/admin', icon: MessagesSquare },
+    { label: 'Support Inbox', href: '/dashboard', icon: MessagesSquare },
     { label: 'Support Agents', href: '/admin/users', icon: Users },
   ],
 }

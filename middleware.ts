@@ -29,10 +29,10 @@ export default function middleware(req: NextRequest) {
 
   if (!hasSession(req)) {
     const signIn = new URL('/sign-in', req.url)
-    signIn.searchParams.set(
-      'redirect_url',
-      `${pathname}${req.nextUrl.search}`
-    )
+    const returnPath = pathname.startsWith('/admin')
+      ? '/dashboard'
+      : `${pathname}${req.nextUrl.search}`
+    signIn.searchParams.set('redirect_url', returnPath)
     return NextResponse.redirect(signIn)
   }
 
