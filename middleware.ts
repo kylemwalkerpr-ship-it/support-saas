@@ -22,15 +22,14 @@ export default clerkMiddleware(
     const { userId } = await auth()
 
     if (pathname === '/') {
-      if (userId) return NextResponse.redirect(new URL('/dashboard', req.url))
+      if (userId) return NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin))
       return NextResponse.next()
     }
 
     if (isPublicRoute(req)) return NextResponse.next()
 
     if (!userId) {
-      const signIn = new URL('/sign-in', req.url)
-      return NextResponse.redirect(signIn)
+      return NextResponse.redirect(new URL('/sign-in', req.nextUrl.origin))
     }
 
     return NextResponse.next()
