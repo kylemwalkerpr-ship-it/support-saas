@@ -54,7 +54,12 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col" style={{ background: '#3C3B6E' }}>
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+      <a
+        href="https://yousafeconsultancy.com"
+        aria-label="Back to Yousafe Consultancy"
+        className="flex h-16 items-center gap-2.5 px-6 no-underline"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.12)', color: 'inherit' }}
+      >
         <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: '#B22234' }}>
           <span className="text-sm font-bold text-white">Y</span>
         </div>
@@ -62,7 +67,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
           <p className="text-sm font-semibold text-white">Yousafe</p>
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>Consultancy</p>
         </div>
-      </div>
+      </a>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
