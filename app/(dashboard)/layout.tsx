@@ -149,14 +149,14 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-gray-50 md:flex-row">
       <Sidebar
         role={profile.role}
         userName={profile.full_name}
         userEmail={profile.email}
         avatarUrl={profile.avatar_url}
       />
-      <div className="flex flex-1 flex-col pl-64">
+      <div className="flex min-w-0 flex-1 flex-col md:pl-64">
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
       <Toaster richColors position="top-right" />

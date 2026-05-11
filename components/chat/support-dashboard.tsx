@@ -106,7 +106,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
 
   return (
     <div className="min-h-screen bg-[#F6F7FB]">
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/90 px-6 py-4 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/90 px-4 py-4 backdrop-blur sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {['support@yousafeconsultancy.com', 'admin@yousafeconsultancy.com', 'info@yousafeconsultancy.com'].map((email) => (
-              <Badge key={email} variant="secondary" className="gap-1 bg-gray-100 text-gray-700">
+              <Badge key={email} variant="secondary" className="max-w-full gap-1 truncate bg-gray-100 text-gray-700">
                 <Mail className="h-3 w-3" />
                 {email}
               </Badge>
@@ -154,9 +154,9 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
         </div>
       </header>
 
-      <main className="grid gap-4 p-6 xl:grid-cols-[320px_1fr_300px]">
+      <main className="grid min-w-0 gap-4 p-4 sm:p-6 xl:grid-cols-[320px_minmax(0,1fr)_300px]">
         <section className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-2">
             <Metric label="Open" value={data.metrics.open} icon={Inbox} />
             <Metric label="Waiting" value={data.metrics.waiting} icon={Clock} tone="amber" />
             <Metric label="AI Active" value={data.metrics.aiHandled} icon={Sparkles} tone="indigo" />
@@ -216,9 +216,9 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
           </Card>
         </section>
 
-        <section className="min-h-[720px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <section className="min-h-[560px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:min-h-[720px]">
           {selected ? (
-            <div className="flex h-full min-h-[720px] flex-col">
+            <div className="flex h-full min-h-[560px] flex-col xl:min-h-[720px]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-4">
                 <div>
                   <h2 className="font-bold text-gray-950">
@@ -228,7 +228,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                     {selected.visitor_email || 'No email captured'} · {selected.topic}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {selectedIsRead && <Badge variant="outline">Read</Badge>}
                   <StatusBadge status={selected.status} />
                   <Button
@@ -288,7 +288,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                   >
                     <div
                       className={cn(
-                        'max-w-[72%] rounded-lg px-3 py-2 text-sm leading-relaxed shadow-sm',
+                        'max-w-[88%] rounded-lg px-3 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[72%]',
                         message.sender_type === 'agent'
                           ? 'bg-[#3C3B6E] text-white'
                           : message.sender_type === 'ai'
@@ -347,7 +347,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
               </form>
             </div>
           ) : (
-            <div className="flex min-h-[720px] items-center justify-center text-gray-500">
+            <div className="flex min-h-[560px] items-center justify-center text-gray-500 xl:min-h-[720px]">
               Select a conversation to begin.
             </div>
           )}
