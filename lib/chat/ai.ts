@@ -5,6 +5,10 @@ const FALLBACK_ANSWER =
 
 const DEFAULT_SITEMAPS = [
   'https://yousafeconsultancy.com/sitemap.xml',
+  'https://usa.yousafeconsultancy.com/sitemap.xml',
+  'https://ca.yousafeconsultancy.com/sitemap.xml',
+  'https://checkout.yousafeconsultancy.com/sitemap.xml',
+  'https://legal.yousafeconsultancy.com/sitemap.xml',
   'https://portal.yousafeconsultancy.com/sitemap.xml',
   'https://support.yousafeconsultancy.com/sitemap.xml',
 ]
@@ -198,14 +202,14 @@ function answerFromDocs(message: string, docs: SiteDoc[]) {
 
   const opener =
     intent === 'billing'
-      ? 'I found the most relevant Yousafe billing and service guidance:'
+      ? 'Here is the most relevant YouSafe billing and service guidance:'
       : intent === 'study'
-        ? 'I found the most relevant Yousafe study/support guidance:'
+        ? 'Here is the most relevant YouSafe study and document-prep guidance:'
         : intent === 'portal'
-          ? 'I found the most relevant Yousafe portal guidance:'
+          ? 'Here is the most relevant YouSafe portal guidance:'
           : intent === 'live'
-            ? 'I can connect you with a live support agent. Here is the closest site guidance while you wait:'
-            : 'I found this in the Yousafe knowledge base:'
+            ? 'I can connect you with a live support agent. While you wait, this is the closest site guidance:'
+            : 'Here is what I found for you:'
 
   return [
     opener,
