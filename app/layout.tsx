@@ -2,6 +2,7 @@ import './globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
 import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
 import { TranslationProvider } from '@/components/translation-provider'
+import { YouSafeLanguageBar } from '@/components/YouSafeLanguageBar'
 
 const clerkPublishableKey =
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
@@ -61,6 +62,7 @@ export default function RootLayout({
         >
           <TranslationProvider>
             {children}
+            <YouSafeLanguageBar />
             <CustomerChatWidget />
           </TranslationProvider>
         </ClerkProvider>
