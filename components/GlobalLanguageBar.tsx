@@ -1,56 +1,27 @@
 "use client"
 
 import React from "react"
+import { languages, useLanguage, type Language } from "@/contexts/language-context"
 
 /**
- * YouSafeLanguageBar — drop-in, standalone language switcher pill.
+ * GlobalLanguageBar — fixed, compact site-wide language switcher.
  *
- * Same visual + UX shape as the portal's GlobalLanguageBar, but self-
- * contained: no context dependency. Mount once from app/layout.tsx and
- * it appears as a fixed pill in the top-right corner of every page.
+ * Mounted once in app/layout.tsx so it shows on EVERY page. Renders the
+ * currently active language as a 2-letter code (EN, ES, FR, AR, ZH, HI,
+ * PT) inside a small pill, and opens a drop panel listing the full native
+ * names. Click-outside / Esc dismisses.
  *
- *   - Reads current language from `?lang=` query string, falls back to
- *     localStorage('yousafe.lang'), falls back to 'en'.
- *   - On change: writes ?lang=<code> back into the URL, persists to
- *     localStorage, and reloads so server-side translation / hreflang
- *     picks up the new locale immediately.
- *   - `position: fixed` at top:74, right:16 — sits BELOW any 60px-height
- *     sticky topbar so it doesn't collide with avatar buttons.
- *
- * Languages mirror the portal: en, es, fr, ar, zh, hi, pt.
+ * `position: fixed` keeps it pinned through scroll. `data-no-translate`
+ * prevents Google Translate from retranslating its own controls.
  */
-
-type LangCode = "en" | "es" | "fr" | "ar" | "zh" | "hi" | "pt"
-
-const LANGS: { code: LangCode; native: string; short: string }[] = [
-  { code: "en", native: "English",  short: "EN" },
-  { code: "es", native: "Español",  short: "ES" },
-  { code: "fr", native: "Français", short: "FR" },
-  { code: "ar", native: "العربية",  short: "AR" },
-  { code: "zh", native: "中文",      short: "ZH" },
-  { code: "hi", native: "हिन्दी",     short: "HI" },
-  { code: "pt", native: "Português", short: "PT" },
-]
-
-function readInitialLang(): LangCode {
-  if (typeof window === "undefined") return "en"
-  try {
-    const fromUrl = new URLSearchParams(window.location.search).get("lang") as LangCode | null
-    if (fromUrl && LANGS.some(l => l.code === fromUrl)) return fromUrl
-    const stored = window.localStorage.getItem("yousafe.lang") as LangCode | null
-    if (stored && LANGS.some(l => l.code === stored)) return stored
-  } catch {/* ignore */}
-  return "en"
+const SHORT_LABEL: Record<Language, string> = {
+  en: "EN", es: "ES", fr: "FR", ar: "AR", zh: "ZH", hi: "HI", pt: "PT",
 }
 
-export function YouSafeLanguageBar() {
-  const [lang, setLang] = React.useState<LangCode>("en")
+export function GlobalLanguageBar() {
+  const { language, setLanguage } = useLanguage()
   const [open, setOpen] = React.useState(false)
   const wrapRef = React.useRef<HTMLDivElement | null>(null)
-
-  React.useEffect(() => {
-    setLang(readInitialLang())
-  }, [])
 
   React.useEffect(() => {
     if (!open) return
@@ -66,20 +37,8 @@ export function YouSafeLanguageBar() {
     }
   }, [open])
 
-  const choose = (code: LangCode) => {
-    setOpen(false)
-    if (code === lang) return
-    try { window.localStorage.setItem("yousafe.lang", code) } catch {/* ignore */}
-    try {
-      const url = new URL(window.location.href)
-      url.searchParams.set("lang", code)
-      window.location.href = url.toString()
-    } catch {
-      window.location.reload()
-    }
-  }
-
-  const current = LANGS.find(l => l.code === lang) || LANGS[0]
+  const current = languages.find(l => l.code === language) || languages[0]
+  const shortCurrent = SHORT_LABEL[current.code] || current.code.toUpperCase()
 
   return (
     <div
@@ -93,7 +52,7 @@ export function YouSafeLanguageBar() {
     >
       <button
         type="button"
-        aria-label={`Language: ${current.native}. Click to change.`}
+        aria-label={`Language: ${current.label}. Click to change.`}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
@@ -116,7 +75,7 @@ export function YouSafeLanguageBar() {
         }}
       >
         <span aria-hidden="true" style={{ fontSize: 12 }}>🌐</span>
-        <span>{current.short}</span>
+        <span>{shortCurrent}</span>
         <span aria-hidden="true" style={{ fontSize: 9, opacity: 0.55, marginLeft: 1 }}>▾</span>
       </button>
 
@@ -140,13 +99,14 @@ export function YouSafeLanguageBar() {
             overflowY: "auto",
           }}
         >
-          {LANGS.map(item => {
-            const active = item.code === lang
+          {languages.map(item => {
+            const active = item.code === language
+            const short = SHORT_LABEL[item.code] || item.code.toUpperCase()
             return (
               <li key={item.code} role="option" aria-selected={active}>
                 <button
                   type="button"
-                  onClick={() => choose(item.code)}
+                  onClick={() => { setLanguage(item.code); setOpen(false) }}
                   style={{
                     width: "100%",
                     display: "flex",
@@ -165,7 +125,7 @@ export function YouSafeLanguageBar() {
                     fontFamily: "inherit",
                   }}
                 >
-                  <span>{item.native}</span>
+                  <span>{item.nativeLabel}</span>
                   <span style={{
                     fontSize: 10,
                     fontWeight: 800,
@@ -173,7 +133,7 @@ export function YouSafeLanguageBar() {
                     color: active ? "#0E7C8E" : "#5C6070",
                     fontFamily: "'SF Mono', Menlo, Consolas, monospace",
                   }}>
-                    {item.short}
+                    {short}
                   </span>
                 </button>
               </li>
@@ -184,5 +144,3 @@ export function YouSafeLanguageBar() {
     </div>
   )
 }
-
-export default YouSafeLanguageBar
