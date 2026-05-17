@@ -32,11 +32,26 @@ function isLanguage(value: string | null): value is Language {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en")
 
+  // Priority chain:
+  //   1. ?lang=             explicit per-request choice (pill, hreflang, links)
+  //   2. localStorage       returning-visitor preference
+  //   3. yousafe-lang-default cookie  server's geo / Accept-Language inference
+  //   4. navigator.language final client-side fallback
+  //   5. 'en'               last resort
   useEffect(() => {
+    if (typeof window === "undefined") return
+    const readCookie = (name: string): string | null => {
+      const m = document.cookie.split(";").map(c => c.trim()).find(c => c.startsWith(name + "="))
+      return m ? decodeURIComponent(m.slice(name.length + 1)) : null
+    }
     const urlLang = new URLSearchParams(window.location.search).get("lang")
+    if (isLanguage(urlLang)) { setLanguageState(urlLang); return }
     const stored = localStorage.getItem(STORAGE_KEY)
-    const nextLanguage = isLanguage(urlLang) ? urlLang : isLanguage(stored) ? stored : "en"
-    setLanguageState(nextLanguage)
+    if (isLanguage(stored)) { setLanguageState(stored); return }
+    const cookieLang = readCookie("yousafe-lang-default")
+    if (isLanguage(cookieLang)) { setLanguageState(cookieLang); return }
+    const navLang = (navigator.language || "").toLowerCase().slice(0, 2)
+    if (isLanguage(navLang)) { setLanguageState(navLang); return }
   }, [])
 
   const setLanguage = useCallback((newLanguage: Language) => {
