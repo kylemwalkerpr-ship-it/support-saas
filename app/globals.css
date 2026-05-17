@@ -1,6 +1,29 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+.yousafe-skip-link {
+  position: absolute;
+  left: -10000px;
+  top: 8px;
+  z-index: 99999;
+  padding: 8px 14px;
+  background: #1B2D4F;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 6px;
+  text-decoration: none;
+}
+.yousafe-skip-link:focus,
+.yousafe-skip-link:focus-visible {
+  left: 8px;
+  outline: 2px solid #C4A45A;
+  outline-offset: 2px;
+}
+*:focus-visible {
+  outline: 2px solid #0E7C8E;
+  outline-offset: 2px;
+}
+
 :root {
   --background: #E8E8E8;
   --foreground: #1F2937;

@@ -1,4 +1,6 @@
 import './globals.css'
+import type { Viewport } from 'next'
+import { headers } from 'next/headers'
 import { ClerkProvider } from '@clerk/nextjs'
 import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
 import { TranslationProvider } from '@/components/translation-provider'
@@ -11,8 +13,9 @@ export const metadata = {
   metadataBase: new URL('https://support.yousafeconsultancy.com'),
   title: 'YouSafe Support — Customer Service & Live Chat',
   description: 'Customer support inbox and live chat management for YouSafe Consultancy.',
+  // Support dashboard is an internal members area — keep it OUT of indexes.
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
   alternates: {
@@ -33,13 +36,21 @@ export const metadata = {
   },
 }
 
-export default function RootLayout({
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#f3eee5',
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const h = await headers()
+  const lang = h.get('x-lang') || 'en'
   return (
-    <html lang="en">
+    <html lang={lang}>
       <head>
         <script
           type="application/ld+json"
@@ -54,6 +65,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <a href="#main" className="yousafe-skip-link">Skip to main content</a>
         <ClerkProvider
           publishableKey={clerkPublishableKey}
           signInUrl="/sign-in"
