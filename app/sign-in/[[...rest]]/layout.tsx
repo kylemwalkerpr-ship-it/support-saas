@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
 
-// Self-canonical so Screaming Frog stops flagging the page as
-// "Canonicalised" against the homepage. The page is already noindex
-// via the root layout — this is purely cosmetic for the SF report.
+// No canonical on noindex pages. Google ignores canonical when noindex
+// is set, and emitting one (self or root) makes Screaming Frog flag the
+// page as either "Canonicalised" or "Non-Indexable Canonical."
 export const metadata: Metadata = {
-  alternates: { canonical: "https://support.yousafeconsultancy.com/sign-in" },
+  alternates: { canonical: null },
 }
 
 export default function SignInLayout({ children }: { children: ReactNode }) {
