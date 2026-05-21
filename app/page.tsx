@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { EstateFooter } from '@/components/EstateFooter'
 import { ArrowRight, Users, MessagesSquare, Shield } from 'lucide-react'
 
 export default function LandingPage() {
@@ -123,12 +124,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t py-8 text-center" style={{ borderColor: '#D1D5DB', background: '#E8E8E8' }}>
-        <p className="text-sm" style={{ color: '#6B7280' }}>
-          &copy; {new Date().getFullYear()} Yousafe Consultancy. All rights reserved.
-        </p>
-      </footer>
+      <EstateFooter />
     </div>
   )
 }
