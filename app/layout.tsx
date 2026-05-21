@@ -64,7 +64,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body style={{ overflowX: 'hidden' }}>
         <a href="#main" className="yousafe-skip-link">Skip to main content</a>
         <ClerkProvider
           publishableKey={clerkPublishableKey}
