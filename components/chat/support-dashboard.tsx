@@ -33,7 +33,10 @@ import type { ChatConversation, ChatMessage } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
+import ChatScreen from '@/components/messaging/ChatScreen'
+import MessageBubble from '@/components/messaging/MessageBubble'
+import AutoGrowInput from '@/components/messaging/AutoGrowInput'
+import { dateLabel, sameDay } from '@/lib/messaging/format'
 
 interface SupportDashboardData {
   conversations: ChatConversation[]
@@ -216,138 +219,153 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
           </Card>
         </section>
 
-        <section className="min-h-[560px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:min-h-[720px]">
+        <section className="h-[560px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:h-[720px]">
           {selected ? (
-            <div className="flex h-full min-h-[560px] flex-col xl:min-h-[720px]">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-4">
-                <div>
-                  <h2 className="font-bold text-gray-950">
-                    {selected.visitor_name || selected.visitor_email || 'Website visitor'}
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    {selected.visitor_email || 'No email captured'} · {selected.topic}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedIsRead && <Badge variant="outline">Read</Badge>}
-                  <StatusBadge status={selected.status} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending || selected.status === 'closed'}
-                    onClick={() => runAction(() => markConversationRead(selected.id), 'Ticket marked read')}
-                  >
-                    <Eye className="h-4 w-4" />
-                    Read
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending || selected.status === 'closed' || selected.status === 'resolved'}
-                    onClick={() => runAction(() => assignConversation(selected.id), 'Conversation assigned')}
-                  >
-                    <UserCheck className="h-4 w-4" />
-                    Join
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => runAction(() => escalateConversation(selected.id), 'Ticket escalated')}
-                  >
-                    <AlertTriangle className="h-4 w-4" />
-                    Escalate
-                  </Button>
-                  <Button
-                    size="sm"
-                    disabled={isPending || selected.status === 'closed' || selected.status === 'resolved'}
-                    onClick={() => runAction(() => resolveConversation(selected.id), 'Conversation resolved')}
-                  >
-                    Resolve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending || selected.status === 'closed'}
-                    onClick={() => runAction(() => closeConversation(selected.id), 'Ticket closed')}
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Close
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-3 overflow-y-auto bg-gray-50 p-5">
-                {selectedMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      'flex',
-                      message.sender_type === 'agent' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'max-w-[88%] rounded-lg px-3 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[72%]',
-                        message.sender_type === 'agent'
-                          ? 'bg-[#3C3B6E] text-white'
-                          : message.sender_type === 'ai'
-                            ? 'border border-indigo-100 bg-indigo-50 text-indigo-950'
-                            : message.sender_type === 'system'
-                              ? 'border border-amber-100 bg-amber-50 text-amber-900'
-                              : 'border border-gray-200 bg-white text-gray-800'
-                      )}
+            <ChatScreen
+              mode="fill"
+              header={
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-4 bg-white">
+                  <div>
+                    <h2 className="font-bold text-gray-950">
+                      {selected.visitor_name || selected.visitor_email || 'Website visitor'}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      {selected.visitor_email || 'No email captured'} · {selected.topic}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedIsRead && <Badge variant="outline">Read</Badge>}
+                    <StatusBadge status={selected.status} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending || selected.status === 'closed'}
+                      onClick={() => runAction(() => markConversationRead(selected.id), 'Ticket marked read')}
                     >
-                      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase opacity-60">
-                        {message.sender_type === 'ai' && <Bot className="h-3 w-3" />}
-                        {message.sender_name || message.sender_type}
-                      </div>
-                      {message.body}
-                    </div>
+                      <Eye className="h-4 w-4" />
+                      Read
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending || selected.status === 'closed' || selected.status === 'resolved'}
+                      onClick={() => runAction(() => assignConversation(selected.id), 'Conversation assigned')}
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      Join
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => runAction(() => escalateConversation(selected.id), 'Ticket escalated')}
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      Escalate
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={isPending || selected.status === 'closed' || selected.status === 'resolved'}
+                      onClick={() => runAction(() => resolveConversation(selected.id), 'Conversation resolved')}
+                    >
+                      Resolve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending || selected.status === 'closed'}
+                      onClick={() => runAction(() => closeConversation(selected.id), 'Ticket closed')}
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Close
+                    </Button>
                   </div>
-                ))}
-              </div>
-
-              <form
-                className="border-t border-gray-200 bg-white p-4"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (!reply.trim() || !selected) return
-                  const body = reply.trim()
-                  setReply('')
-                  runAction(() => sendAgentMessage(selected.id, body), 'Reply sent')
-                }}
-              >
-                {selected.status === 'closed' || selected.status === 'resolved' ? (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                    This conversation is {selected.status}. Reopen by escalating it if the visitor needs more help.
-                  </div>
-                ) : (
-                  <Textarea
-                    value={reply}
-                    onChange={(event) => setReply(event.target.value)}
-                    placeholder="Reply as Yousafe Support..."
-                    className="min-h-24 resize-none"
-                  />
-                )}
-                <div className="mt-3 flex justify-end">
-                  <Button
-                    disabled={
-                      isPending ||
-                      !reply.trim() ||
-                      selected.status === 'closed' ||
-                      selected.status === 'resolved'
-                    }
-                    type="submit"
-                  >
-                    <Send className="h-4 w-4" />
-                    Send reply
-                  </Button>
                 </div>
-              </form>
-            </div>
+              }
+              messages={
+                <>
+                  {selectedMessages.map((message, i) => {
+                    const prev = selectedMessages[i - 1]
+                    const parts: React.ReactNode[] = []
+                    const showDate = !prev || !sameDay(message.created_at, prev.created_at)
+                    if (showDate) {
+                      parts.push(
+                        <div key={`date-${message.id}`} style={{ display: 'flex', justifyContent: 'center', margin: '10px 0' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', background: 'rgba(0,0,0,0.06)', padding: '4px 12px', borderRadius: 999, letterSpacing: '.02em' }}>
+                            {dateLabel(message.created_at)}
+                          </span>
+                        </div>
+                      )
+                    }
+                    if (message.sender_type === 'system') {
+                      parts.push(
+                        <div key={message.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+                          <div style={{ maxWidth: '85%', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 999, padding: '6px 14px', color: '#78350F', fontSize: 12, textAlign: 'center', fontWeight: 600 }}>
+                            {message.body}
+                          </div>
+                        </div>
+                      )
+                    } else {
+                      const mine = message.sender_type === 'agent'
+                      const prevMine = prev ? prev.sender_type === 'agent' : null
+                      const nextMine = selectedMessages[i + 1] ? selectedMessages[i + 1].sender_type === 'agent' : null
+                      const isFirstInGroup = prevMine !== mine
+                      const isLastInGroup = nextMine !== mine
+                      parts.push(
+                        <MessageBubble
+                          key={message.id}
+                          mine={mine}
+                          isFirstInGroup={isFirstInGroup}
+                          isLastInGroup={isLastInGroup}
+                          timestamp={message.created_at}
+                          body={message.body}
+                        />
+                      )
+                    }
+                    return parts
+                  })}
+                </>
+              }
+              composer={
+                <div className="border-t border-gray-200 bg-white p-4">
+                  {selected.status === 'closed' || selected.status === 'resolved' ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                      This conversation is {selected.status}. Reopen by escalating it if the visitor needs more help.
+                    </div>
+                  ) : (
+                    <>
+                      <AutoGrowInput
+                        value={reply}
+                        onChange={setReply}
+                        onSubmit={() => {
+                          if (!reply.trim() || !selected) return
+                          const body = reply.trim()
+                          setReply('')
+                          runAction(() => sendAgentMessage(selected.id, body), 'Reply sent')
+                        }}
+                        placeholder="Reply as Yousafe Support..."
+                      />
+                      <div className="mt-3 flex justify-end">
+                        <Button
+                          disabled={isPending || !reply.trim()}
+                          onClick={() => {
+                            if (!reply.trim() || !selected) return
+                            const body = reply.trim()
+                            setReply('')
+                            runAction(() => sendAgentMessage(selected.id, body), 'Reply sent')
+                          }}
+                        >
+                          <Send className="h-4 w-4" />
+                          Send reply
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              }
+            />
           ) : (
-            <div className="flex min-h-[560px] items-center justify-center text-gray-500 xl:min-h-[720px]">
+            <div className="flex h-full items-center justify-center text-gray-500">
               Select a conversation to begin.
             </div>
           )}
