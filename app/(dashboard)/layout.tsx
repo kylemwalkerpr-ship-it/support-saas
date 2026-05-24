@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { getClerkUserId } from '@/lib/auth'
 import { Sidebar } from '@/components/dashboard/sidebar'
+import { ThemeProvider } from '@/components/dashboard/theme-provider'
 import { Toaster } from 'sonner'
 import { AlertTriangle, Clock, Mail } from 'lucide-react'
 
@@ -149,17 +150,19 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 md:flex-row">
-      <Sidebar
-        role={profile.role}
-        userName={profile.full_name}
-        userEmail={profile.email}
-        avatarUrl={profile.avatar_url}
-      />
-      <div className="flex min-w-0 flex-1 flex-col md:pl-64">
-        <main className="flex-1 overflow-auto">{children}</main>
+    <ThemeProvider>
+      <div className="flex min-h-screen flex-col bg-gray-50 md:flex-row">
+        <Sidebar
+          role={profile.role}
+          userName={profile.full_name}
+          userEmail={profile.email}
+          avatarUrl={profile.avatar_url}
+        />
+        <div className="flex min-w-0 flex-1 flex-col md:pl-64">
+          <main className="flex-1 overflow-auto">{children}</main>
+        </div>
+        <Toaster richColors position="top-right" />
       </div>
-      <Toaster richColors position="top-right" />
-    </div>
+    </ThemeProvider>
   )
 }

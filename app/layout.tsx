@@ -1,4 +1,5 @@
 import './globals.css'
+import './portal-themes.css'
 import type { Viewport } from 'next'
 import { headers } from 'next/headers'
 import { ClerkProvider } from '@clerk/nextjs'
