@@ -8,6 +8,7 @@ import {
   LogOut,
   ChevronRight,
   Settings,
+  Inbox,
   type LucideIcon,
 } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
@@ -25,11 +26,13 @@ const navByRole: Record<Role, NavItem[]> = {
   consultant: [],
   support: [
     { label: 'Support Inbox', href: '/dashboard', icon: MessagesSquare },
+    { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
   ],
   admin: [
     { label: 'Support Inbox', href: '/dashboard', icon: MessagesSquare },
     { label: 'Support Agents', href: '/admin/users', icon: Users },
+    { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
   ],
 }
