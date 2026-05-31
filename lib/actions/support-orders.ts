@@ -35,7 +35,9 @@ export interface PortalOrderRow {
   refunded_amount: number | null
   client_id: string | null
   consultant_id: string | null
-  service_id: string | null
+  /** Hydrated best-effort from order_items.service_id → services.title. May
+   *  be null when the order has no line items, the row was removed, or the
+   *  order is a template/wallet-topup (no service link). */
   service_title: string | null
 }
 
@@ -189,7 +191,7 @@ async function loadOrder(
   const { data, error } = await db
     .from('orders')
     .select(
-      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id, service_id'
+      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id'
     )
     .eq('id', orderId)
     .maybeSingle()
@@ -205,15 +207,20 @@ async function loadOrder(
     throw new SupportActionError('not_found', 'Order not found', 404)
   }
 
-  // Resolve service title best-effort.
+  // Resolve service title best-effort. The orders table doesn't carry a
+  // direct service_id — orders link to services via order_items, and some
+  // orders (template purchases, wallet top-ups, gig flows) never touch
+  // services at all. Pick the first line item's title.
   let serviceTitle: string | null = null
-  if (data.service_id) {
-    const { data: svc } = await db
-      .from('services')
-      .select('title')
-      .eq('id', data.service_id)
-      .maybeSingle()
-    serviceTitle = (svc as { title?: string } | null)?.title ?? null
+  const { data: items } = await db
+    .from('order_items')
+    .select('service_id, services:service_id(title)')
+    .eq('order_id', orderId)
+    .limit(1)
+  const firstItem = (items ?? [])[0] as { services?: { title?: string } | { title?: string }[] | null } | undefined
+  if (firstItem?.services) {
+    const svc = Array.isArray(firstItem.services) ? firstItem.services[0] : firstItem.services
+    serviceTitle = svc?.title ?? null
   }
 
   return { ...(data as Omit<PortalOrderRow, 'service_title'>), service_title: serviceTitle }
@@ -253,7 +260,7 @@ export async function searchOrders(
   let qb = db
     .from('orders')
     .select(
-      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id, service_id',
+      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id',
       { count: 'exact' }
     )
     .order('created_at', { ascending: false })
@@ -310,24 +317,30 @@ export async function searchOrders(
   const hasMore = rows.length > limit
   const page = hasMore ? rows.slice(0, limit) : rows
 
-  // Hydrate service title in one batch.
-  const svcIds = Array.from(
-    new Set(page.map((r) => r.service_id).filter((x): x is string => !!x))
-  )
-  const svcTitles = new Map<string, string>()
-  if (svcIds.length > 0) {
-    const { data: svcRows } = await db
-      .from('services')
-      .select('id, title')
-      .in('id', svcIds)
-    for (const row of (svcRows ?? []) as Array<{ id: string; title: string }>) {
-      svcTitles.set(row.id, row.title)
+  // Hydrate service title in one batch via order_items. Not every order has
+  // a line item (template purchases, wallet top-ups, gig flows skip the
+  // services table entirely), so this is best-effort. Use the first item
+  // per order for the display label.
+  const titleByOrderId = new Map<string, string>()
+  if (page.length > 0) {
+    const orderIds = page.map((r) => r.id)
+    const { data: itemRows } = await db
+      .from('order_items')
+      .select('order_id, services:service_id(title)')
+      .in('order_id', orderIds)
+    for (const item of (itemRows ?? []) as Array<{
+      order_id: string
+      services: { title?: string } | { title?: string }[] | null
+    }>) {
+      if (titleByOrderId.has(item.order_id)) continue
+      const svc = Array.isArray(item.services) ? item.services[0] : item.services
+      if (svc?.title) titleByOrderId.set(item.order_id, svc.title)
     }
   }
 
   const orders: PortalOrderRow[] = page.map((r) => ({
     ...r,
-    service_title: r.service_id ? svcTitles.get(r.service_id) ?? null : null,
+    service_title: titleByOrderId.get(r.id) ?? null,
   }))
 
   const nextCursor =
@@ -534,7 +547,7 @@ export async function interveneExtendDeadline(
     .update({ delivery_deadline: next.toISOString() })
     .eq('id', order.id)
     .select(
-      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id, service_id'
+      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id'
     )
     .single()
 
@@ -589,7 +602,7 @@ export async function interveneForceCancel(
     })
     .eq('id', order.id)
     .select(
-      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id, service_id'
+      'id, order_number, status, total_amount, gateway, created_at, updated_at, delivery_deadline, cancelled_at, refunded_at, refunded_amount, client_id, consultant_id'
     )
     .single()
 
