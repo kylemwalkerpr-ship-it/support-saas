@@ -6,6 +6,7 @@ import {
   logSupportAction,
   SupportActionError,
 } from '@/lib/actions/support-audit'
+import { fanOutToSupportAgents } from '@/lib/actions/support-notifications'
 import { SUPPORT_REFUND_CAP_CENTS } from '@/lib/constants'
 import type {
   Profile,
@@ -698,6 +699,22 @@ export async function openDispute(input: OpenDisputeInput): Promise<Dispute> {
       against_role: againstRole,
     },
   })
+
+  // Phase 9 — fan out a new-dispute notification to all support+admin agents.
+  // Exclude the actor who just opened it; they don't need a self-notification.
+  try {
+    await fanOutToSupportAgents({
+      type: 'new_dispute',
+      subjectType: 'dispute',
+      subjectId: (data as { id: string }).id,
+      title: 'New dispute opened',
+      body: `Dispute on order ${order.order_number ?? order.id.slice(0, 8)}: ${reason.slice(0, 200)}`,
+      excludeProfileId: actor.id,
+    })
+  } catch (err) {
+    // Notification fan-out must never block dispute creation.
+    console.warn('[openDispute] notification fan-out failed', err)
+  }
 
   return data as Dispute
 }

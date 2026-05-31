@@ -7,6 +7,7 @@ import {
   SupportActionError,
 } from '@/lib/actions/support-audit'
 import { suspendUser } from '@/lib/actions/support-users'
+import { fanOutToSupportAgents } from '@/lib/actions/support-notifications'
 import type {
   ModerationCategory,
   ModerationFlag,
@@ -925,6 +926,20 @@ export async function createSystemFlag(
       category: input.category,
     },
   })
+
+  // Phase 9 — fan out a new-system-flag notification to all support+admin
+  // agents so the moderation queue is monitored even outside business hours.
+  try {
+    await fanOutToSupportAgents({
+      type: 'flag_raised',
+      subjectType: 'moderation_flag',
+      subjectId: flag.id,
+      title: 'New system flag raised',
+      body: `${input.category} flag on ${input.target_type}: ${reason.slice(0, 200)}`,
+    })
+  } catch (err) {
+    console.warn('[createSystemFlag] notification fan-out failed', err)
+  }
 
   return flag
 }

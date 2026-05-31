@@ -1,9 +1,7 @@
 'use client'
 
-import { Bell, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { GlobalLanguageBar } from '@/components/GlobalLanguageBar'
+import { NotificationBell } from '@/components/support/NotificationBell'
 
 interface HeaderProps {
   title: string
@@ -19,9 +17,7 @@ export function Header({ title, subtitle }: HeaderProps) {
       </div>
       <div className="flex items-center gap-2">
         <GlobalLanguageBar />
-        <Button variant="ghost" size="icon" className="relative text-gray-500">
-          <Bell className="h-5 w-5" />
-        </Button>
+        <NotificationBell />
       </div>
     </header>
   )
