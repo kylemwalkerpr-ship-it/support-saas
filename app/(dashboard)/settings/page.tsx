@@ -2,6 +2,7 @@
 
 import { usePortalTheme } from '@/hooks/usePortalTheme'
 import ThemePicker from '@/components/ThemePicker'
+import { BrowserNotificationToggle } from '@/components/support/BrowserNotificationToggle'
 
 export default function SettingsPage() {
   const [theme, applyTheme] = usePortalTheme()
@@ -29,6 +30,22 @@ export default function SettingsPage() {
           Choose your view — your saved theme follows you on every device.
         </p>
         <ThemePicker currentTheme={theme} onChange={applyTheme} />
+      </div>
+
+      <div
+        style={{
+          background: 'var(--portal-surface)',
+          border: '1px solid var(--portal-rule)',
+          borderRadius: 12,
+          padding: '20px 24px',
+          marginBottom: 24,
+        }}
+      >
+        <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>Inbox notifications</h2>
+        <p style={{ fontSize: 13, color: 'var(--portal-ink-soft)', margin: '0 0 18px', lineHeight: 1.5 }}>
+          Opt in to desktop alerts for new customer messages. Permission is stored locally per browser.
+        </p>
+        <BrowserNotificationToggle />
       </div>
     </div>
   )

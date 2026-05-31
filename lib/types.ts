@@ -95,6 +95,10 @@ export type ChatConversationStatus =
 
 export type ChatSenderType = 'visitor' | 'ai' | 'agent' | 'system'
 
+export type InboxStatus = 'open' | 'snoozed' | 'resolved'
+
+export type InboxChannel = 'widget' | 'email' | 'in_app'
+
 export interface ChatConversation {
   id: string
   visitor_name: string | null
@@ -104,6 +108,13 @@ export interface ChatConversation {
   status: ChatConversationStatus
   priority: 'low' | 'normal' | 'high' | 'urgent'
   assigned_to_id: string | null
+  // Phase 5 inbox shape — see migration 011.
+  assigned_to: string | null
+  assigned_at: string | null
+  inbox_status: InboxStatus
+  snoozed_until: string | null
+  last_customer_message_at: string | null
+  last_agent_message_at: string | null
   last_message: string | null
   last_message_at: string
   requested_agent_at: string | null
@@ -111,7 +122,7 @@ export interface ChatConversation {
   metadata: Record<string, unknown> | null
   created_at: string
   updated_at: string
-  assigned_to?: Profile | null
+  assigned_profile?: Profile | null
 }
 
 export interface ChatMessage {

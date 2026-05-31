@@ -40,7 +40,7 @@ export async function getSupportDashboardData() {
     await Promise.all([
       db
         .from('chat_conversations')
-        .select('*, assigned_to:profiles(*)')
+        .select('*, assigned_profile:profiles!chat_conversations_assigned_to_id_fkey(*)')
         .order('last_message_at', { ascending: false })
         .limit(100),
       db

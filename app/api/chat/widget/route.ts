@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!conversationId) {
+      const nowIso = new Date().toISOString()
       const { data: conversation, error } = await db
         .from('chat_conversations')
         .insert({
@@ -50,7 +51,10 @@ export async function POST(request: NextRequest) {
           visitor_phone: body.visitor?.phone || null,
           topic: body.topic || 'support',
           last_message: message,
-          last_message_at: new Date().toISOString(),
+          last_message_at: nowIso,
+          // Phase 5 inbox SLA columns.
+          last_customer_message_at: nowIso,
+          inbox_status: 'open',
         })
         .select('*')
         .single()
@@ -74,10 +78,15 @@ export async function POST(request: NextRequest) {
 
     if (existingStatus === 'assigned' || existingStatus === 'waiting_for_agent') {
       const nextStatus = body.requestAgent === true ? 'waiting_for_agent' : existingStatus
+      const nowIso = new Date().toISOString()
       const updatePayload: Record<string, unknown> = {
         status: nextStatus,
         last_message: message,
-        last_message_at: new Date().toISOString(),
+        last_message_at: nowIso,
+        last_customer_message_at: nowIso,
+        // Reopen if the customer writes back after we marked resolved/snoozed.
+        inbox_status: 'open',
+        snoozed_until: null,
       }
       if (body.requestAgent === true) {
         updatePayload.priority = 'high'
@@ -106,14 +115,18 @@ export async function POST(request: NextRequest) {
     const wantsAgent = shouldEscalateToLiveAgent(message) || body.requestAgent === true
 
     if (wantsAgent) {
+      const nowIso = new Date().toISOString()
       await db
         .from('chat_conversations')
         .update({
           status: 'waiting_for_agent',
           priority: message.toLowerCase().includes('urgent') ? 'urgent' : 'high',
-          requested_agent_at: new Date().toISOString(),
+          requested_agent_at: nowIso,
           last_message: message,
-          last_message_at: new Date().toISOString(),
+          last_message_at: nowIso,
+          last_customer_message_at: nowIso,
+          inbox_status: 'open',
+          snoozed_until: null,
         })
         .eq('id', conversationId)
 
@@ -144,12 +157,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: aiMessageError.message }, { status: 500, headers: corsHeaders })
       }
 
+      // Note: we record the customer's send time as last_customer_message_at
+      // even though the row's last_message text is the AI reply — the SLA
+      // clock measures customer-wait time, not AI activity.
+      const nowIso = new Date().toISOString()
       const { error: updateError } = await db
         .from('chat_conversations')
         .update({
           status: 'ai_active',
           last_message: answer,
-          last_message_at: new Date().toISOString(),
+          last_message_at: nowIso,
+          last_customer_message_at: nowIso,
         })
         .eq('id', conversationId)
       if (updateError) {
