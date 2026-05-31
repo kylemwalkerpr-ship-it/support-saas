@@ -14,6 +14,7 @@ import {
   Scale,
   MessageSquareText,
   BadgeCheck,
+  Flag,
   type LucideIcon,
 } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
@@ -37,6 +38,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'Disputes', href: '/disputes', icon: Scale },
     { label: 'Verifications', href: '/verifications', icon: BadgeCheck },
     { label: 'Macros', href: '/macros', icon: MessageSquareText },
+    { label: 'Moderation', href: '/moderation', icon: Flag },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
   ],
@@ -48,6 +50,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'Disputes', href: '/disputes', icon: Scale },
     { label: 'Verifications', href: '/verifications', icon: BadgeCheck },
     { label: 'Macros', href: '/macros', icon: MessageSquareText },
+    { label: 'Moderation', href: '/moderation', icon: Flag },
     { label: 'Support Agents', href: '/admin/users', icon: Users },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
