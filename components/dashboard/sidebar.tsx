@@ -11,6 +11,7 @@ import {
   Inbox,
   ShoppingCart,
   LayoutDashboard,
+  Scale,
   type LucideIcon,
 } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
@@ -31,6 +32,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'Inbox', href: '/inbox', icon: MessagesSquare },
     { label: 'Users', href: '/users', icon: Users },
     { label: 'Orders', href: '/orders', icon: ShoppingCart },
+    { label: 'Disputes', href: '/disputes', icon: Scale },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
   ],
@@ -39,6 +41,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'Inbox', href: '/inbox', icon: MessagesSquare },
     { label: 'Users', href: '/users', icon: Users },
     { label: 'Orders', href: '/orders', icon: ShoppingCart },
+    { label: 'Disputes', href: '/disputes', icon: Scale },
     { label: 'Support Agents', href: '/admin/users', icon: Users },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },

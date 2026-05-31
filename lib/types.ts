@@ -187,6 +187,15 @@ export interface SupportMacro {
   updated_at: string
 }
 
+export interface DisputeProposedDecision {
+  proposed_decision: 'refund_full' | 'refund_partial' | 'release' | 'split'
+  proposed_amount_cents?: number
+  proposed_release_cents?: number
+  proposed_actor_id: string
+  proposed_notes: string
+  proposed_at: string
+}
+
 export interface Dispute {
   id: string
   order_id: string
@@ -199,6 +208,7 @@ export interface Dispute {
   resolution_notes: string | null
   resolved_by: string | null
   resolved_at: string | null
+  metadata: Record<string, unknown> & Partial<DisputeProposedDecision>
   created_at: string
   updated_at: string
 }
