@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { issueWalletCredit } from '@/lib/actions/support-wallet'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 type RouteContext = { params: Promise<{ id: string }> }
 

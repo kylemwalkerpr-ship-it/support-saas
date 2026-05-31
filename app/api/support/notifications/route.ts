@@ -5,7 +5,7 @@ import {
   markAllRead,
 } from '@/lib/actions/support-notifications'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 export async function GET(request: Request) {
   try {

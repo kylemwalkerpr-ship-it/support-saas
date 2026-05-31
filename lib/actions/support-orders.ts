@@ -4,10 +4,11 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { fanOutToSupportAgents } from '@/lib/actions/support-notifications'
 import { SUPPORT_REFUND_CAP_CENTS } from '@/lib/constants'
+import { can } from '@/lib/rbac'
 import type {
   Profile,
   SupportAuditLogEntry,
@@ -762,7 +763,10 @@ export async function processRefund(
     )
   }
 
-  if (actor.role !== 'admin' && amountCents > SUPPORT_REFUND_CAP_CENTS) {
+  // Centralised via rbac.can() — preserves the legacy
+  // `requires_admin_co_sign` semantic which the dialog UI keys on,
+  // rather than collapsing to a generic forbidden response.
+  if (!can(actor.role, 'order.refund', { amountCents })) {
     throw new SupportActionError(
       'requires_admin_co_sign',
       `Refunds above ${SUPPORT_REFUND_CAP_CENTS}¢ require admin co-sign`,

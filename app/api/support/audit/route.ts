@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { searchAuditLog } from '@/lib/actions/support-audit-viewer'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 export async function GET(request: Request) {
   try {

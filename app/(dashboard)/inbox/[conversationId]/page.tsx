@@ -5,7 +5,7 @@ import {
   getConversationBundle,
 } from '@/lib/actions/support-inbox'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { Header } from '@/components/dashboard/header'
 import { InboxConversationList } from '@/components/support/InboxConversationList'
 import { ConversationHeader } from '@/components/support/ConversationHeader'

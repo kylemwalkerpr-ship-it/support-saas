@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getTeamMetrics, type MetricsRange } from '@/lib/actions/support-metrics'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 const VALID_RANGES: MetricsRange[] = ['today', '7d', '30d']
 

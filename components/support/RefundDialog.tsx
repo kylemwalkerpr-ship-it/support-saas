@@ -107,12 +107,18 @@ export function RefundDialog({
         const json = (await res.json().catch(() => ({}))) as {
           error?: string
           code?: string
+          gatewayCode?: string
         }
         if (!res.ok) {
           if (json.code === 'requires_admin_co_sign') {
             toast.error('Refund requires admin co-sign — escalate via Phase 4 dispute flow.')
           } else if (json.code === 'config_missing') {
             toast.error('Refund gateway not configured — try out-of-band.')
+          } else if (json.gatewayCode || json.code === 'gateway_error') {
+            // Surface the gateway response verbatim so the agent can
+            // decide between retrying, escalating, or going out-of-band.
+            const detail = json.error ?? json.gatewayCode ?? 'unknown'
+            toast.error(`Refund failed: gateway returned ${detail} — try out-of-band.`)
           } else {
             toast.error(json.error ?? 'Refund failed')
           }

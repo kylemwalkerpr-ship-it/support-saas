@@ -6,7 +6,7 @@ import {
   reactivateUser,
   suspendUser,
 } from '@/lib/actions/support-users'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { Role } from '@/lib/types'
 
 const ALL_ROLES: ReadonlySet<Role> = new Set<Role>([

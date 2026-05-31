@@ -3,7 +3,7 @@ import {
   searchFlags,
   createSystemFlag,
 } from '@/lib/actions/support-moderation'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type {
   ModerationCategory,
   ModerationStatus,

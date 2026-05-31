@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { exportAuditLog, toCsv } from '@/lib/actions/support-audit-viewer'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 function buildFilename(): string {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       q: url.searchParams.get('q'),
     })
 
-    const csv = toCsv(result.rows)
+    const csv = await toCsv(result.rows)
 
     return new NextResponse(csv, {
       status: 200,

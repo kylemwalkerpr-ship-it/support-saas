@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { searchOrders } from '@/lib/actions/support-orders'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 function parseList(values: string[]): string[] {
   const out: string[] = []

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { searchUsers } from '@/lib/actions/support-users'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { Role, ProfileStatus } from '@/lib/types'
 
 const ALL_ROLES: ReadonlySet<Role> = new Set<Role>([

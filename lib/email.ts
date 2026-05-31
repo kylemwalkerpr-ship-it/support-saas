@@ -9,7 +9,7 @@
  * for the portal Worker; the same key + sender is reused here.
  */
 
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
 const DEFAULT_FROM = 'YouSafe Support <support@yousafeconsultancy.com>'

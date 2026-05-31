@@ -4,7 +4,7 @@ import {
   createMacro,
   type ListMacrosInput,
 } from '@/lib/actions/support-macros'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 const VALID_SCOPES = ['mine', 'team', 'all'] as const
 

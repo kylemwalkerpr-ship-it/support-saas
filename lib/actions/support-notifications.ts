@@ -2,7 +2,7 @@
 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { Profile, SupportNotification } from '@/lib/types'
 
 // ============================================================

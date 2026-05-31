@@ -4,8 +4,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { sendSupportEmail } from '@/lib/email'
 import type { Profile } from '@/lib/types'
 

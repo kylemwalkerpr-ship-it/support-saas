@@ -2,7 +2,8 @@
 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
+import { requireCan } from '@/lib/rbac'
 import type { Profile, SupportAuditLogEntry, SupportActorRole } from '@/lib/types'
 
 // ============================================================
@@ -101,13 +102,7 @@ async function requireSupportOrAdmin(): Promise<Profile> {
 
 async function requireAdmin(): Promise<Profile> {
   const profile = await requireSupportOrAdmin()
-  if (profile.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Admin role required for this surface',
-      403
-    )
-  }
+  requireCan(profile, 'audit.export')
   return profile
 }
 
@@ -373,7 +368,9 @@ function csvEscape(value: string | null | undefined): string {
   return raw
 }
 
-export function toCsv(rows: AuditSearchRow[]): string {
+// Async so it satisfies the 'use server' contract (only async
+// exports allowed). Pure function otherwise — no IO.
+export async function toCsv(rows: AuditSearchRow[]): Promise<string> {
   const header = [
     'id',
     'created_at',

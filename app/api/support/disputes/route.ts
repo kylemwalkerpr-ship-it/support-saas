@@ -4,7 +4,7 @@ import {
   searchDisputes,
   type DisputeAgeBucket,
 } from '@/lib/actions/support-disputes'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { DisputeStatus } from '@/lib/types'
 
 // Phase 3 POST stays as-is. Phase 4 adds GET for the queue.

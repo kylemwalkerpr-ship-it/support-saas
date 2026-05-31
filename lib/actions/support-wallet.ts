@@ -3,9 +3,10 @@
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { SUPPORT_WALLET_CREDIT_CAP_CENTS } from '@/lib/constants'
+import { can } from '@/lib/rbac'
 import type { Profile, SupportAuditLogEntry } from '@/lib/types'
 
 // ============================================================
@@ -126,7 +127,9 @@ export async function issueWalletCredit(
   const memo = validateMemo(input.memo)
   const reason = validateReason(input.reason)
 
-  if (actor.role !== 'admin' && amountCents > SUPPORT_WALLET_CREDIT_CAP_CENTS) {
+  // Centralised via rbac.can() — same domain-specific
+  // `requires_admin_co_sign` semantic as order.refund.
+  if (!can(actor.role, 'wallet.credit', { amountCents })) {
     throw new SupportActionError(
       'requires_admin_co_sign',
       `Wallet credits above ${SUPPORT_WALLET_CREDIT_CAP_CENTS}¢ require admin co-sign`,

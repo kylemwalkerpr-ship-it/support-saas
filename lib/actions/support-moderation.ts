@@ -4,10 +4,11 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { suspendUser } from '@/lib/actions/support-users'
 import { fanOutToSupportAgents } from '@/lib/actions/support-notifications'
+import { requireCan } from '@/lib/rbac'
 import type {
   ModerationCategory,
   ModerationFlag,
@@ -203,13 +204,10 @@ async function requireSupportOrAdmin(): Promise<Profile> {
 
 async function requireAdmin(): Promise<Profile> {
   const actor = await requireSupportOrAdmin()
-  if (actor.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Only admins can perform this action',
-      403
-    )
-  }
+  // Routed through the central RBAC layer.
+  // `moderation.create_system_flag` is the canonical admin-only
+  // action this helper guards in this file.
+  requireCan(actor, 'moderation.create_system_flag')
   return actor
 }
 

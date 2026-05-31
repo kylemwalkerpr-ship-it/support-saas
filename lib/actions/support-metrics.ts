@@ -2,7 +2,8 @@
 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
+import { requireCan } from '@/lib/rbac'
 
 // ============================================================
 // Types — Phase 3 dashboard home tiles (minimal scaffolding;
@@ -448,28 +449,13 @@ export async function getAgentMetrics(input: {
   range?: MetricsRange
 }): Promise<AgentMetrics> {
   const profile = await getOrCreateProfile()
-  if (!profile) {
-    throw new SupportActionError('unauthorized', 'No authenticated profile', 401)
-  }
-  if (profile.role !== 'support' && profile.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      `Role '${profile.role}' is not permitted on this surface`,
-      403
-    )
-  }
+  requireCan(profile, 'metrics.read_mine')
 
   // A support agent can only view their own metrics. An admin may pass any
-  // profileId — useful for spot-checking individual agents in team view.
+  // profileId — checked through rbac.can('metrics.read_team').
   let actorId = profile.id
   if (input.profileId && input.profileId !== profile.id) {
-    if (profile.role !== 'admin') {
-      throw new SupportActionError(
-        'forbidden',
-        'Only admins may inspect another agent',
-        403
-      )
-    }
+    requireCan(profile, 'metrics.read_team')
     actorId = input.profileId
   }
 
@@ -496,16 +482,7 @@ export async function getTeamMetrics(input: {
   range?: MetricsRange
 }): Promise<TeamMetrics> {
   const profile = await getOrCreateProfile()
-  if (!profile) {
-    throw new SupportActionError('unauthorized', 'No authenticated profile', 401)
-  }
-  if (profile.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Team metrics require admin role',
-      403
-    )
-  }
+  requireCan(profile, 'metrics.read_team')
   const range: MetricsRange = input.range ?? '7d'
   const db = createSupabaseAdminClient()
   return buildMetrics(db, { actorId: null, range })

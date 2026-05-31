@@ -6,7 +6,7 @@ import {
   getVerificationBundle,
   type VerificationType,
 } from '@/lib/actions/support-verifications'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { Header } from '@/components/dashboard/header'
 import { VerificationApplicantPanel } from '@/components/support/VerificationApplicantPanel'
 import { VerificationDocViewer } from '@/components/support/VerificationDocViewer'

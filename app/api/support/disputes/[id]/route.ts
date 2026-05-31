@@ -5,7 +5,7 @@ import {
   cosignDispute,
   type DisputeDecision,
 } from '@/lib/actions/support-disputes'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 type RouteContext = { params: Promise<{ id: string }> }
 

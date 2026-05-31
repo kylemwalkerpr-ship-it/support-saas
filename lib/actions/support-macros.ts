@@ -4,8 +4,9 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
+import { requireCan } from '@/lib/rbac'
 import type { Profile, SupportMacro } from '@/lib/types'
 
 // ============================================================
@@ -184,13 +185,10 @@ export async function createMacro(input: CreateMacroInput): Promise<SupportMacro
     throw new SupportActionError('invalid_input', 'body is required', 400)
   }
   const isTeamWide = !!input.isTeamWide
-  if (isTeamWide && actor.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Only admins can create team-wide macros',
-      403
-    )
-  }
+  requireCan(
+    actor,
+    isTeamWide ? 'macro.create_team_wide' : 'macro.create_personal'
+  )
 
   const db = createSupabaseAdminClient()
   const { data, error } = await db
@@ -226,15 +224,13 @@ export async function createMacro(input: CreateMacroInput): Promise<SupportMacro
 export async function updateMacro(input: UpdateMacroInput): Promise<SupportMacro> {
   const actor = await requireSupportOrAdmin()
   const existing = await getMacroById(input.id)
-  if (existing.owner_id && existing.owner_id !== actor.id && actor.role !== 'admin') {
-    throw new SupportActionError('forbidden', 'Cannot edit this macro', 403)
-  }
-  if (!existing.owner_id && actor.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Team-wide macros are admin-only',
-      403
-    )
+  if (existing.owner_id) {
+    requireCan(actor, 'macro.update_personal', {
+      ownerId: existing.owner_id,
+      actorId: actor.id,
+    })
+  } else {
+    requireCan(actor, 'macro.update_team_wide')
   }
 
   const patch: Record<string, unknown> = {}
@@ -278,15 +274,13 @@ export async function updateMacro(input: UpdateMacroInput): Promise<SupportMacro
 export async function deleteMacro(id: string): Promise<void> {
   const actor = await requireSupportOrAdmin()
   const existing = await getMacroById(id)
-  if (existing.owner_id && existing.owner_id !== actor.id && actor.role !== 'admin') {
-    throw new SupportActionError('forbidden', 'Cannot delete this macro', 403)
-  }
-  if (!existing.owner_id && actor.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Team-wide macros are admin-only',
-      403
-    )
+  if (existing.owner_id) {
+    requireCan(actor, 'macro.delete_personal', {
+      ownerId: existing.owner_id,
+      actorId: actor.id,
+    })
+  } else {
+    requireCan(actor, 'macro.delete_team_wide')
   }
 
   const db = createSupabaseAdminClient()

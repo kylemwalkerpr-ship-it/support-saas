@@ -3,8 +3,8 @@
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { Profile, SupportAuditLogEntry } from '@/lib/types'
 
 // ============================================================

@@ -4,8 +4,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { addUserNote } from '@/lib/actions/support-users'
 import { getMacroById, renderMacroBody } from '@/lib/actions/support-macros'
 import { sendSupportEmail } from '@/lib/email'

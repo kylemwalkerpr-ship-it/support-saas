@@ -2,23 +2,12 @@
 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
+import { SupportActionError } from '@/lib/errors'
 import type { SupportAuditLogEntry, SupportActorRole } from '@/lib/types'
 
-/**
- * Typed error thrown by support actions. Kept inline per Phase 1 scope; a
- * shared lib/errors.ts arrives in Phase 10's RBAC pass.
- */
-export class SupportActionError extends Error {
-  readonly code: string
-  readonly httpStatus: number
-
-  constructor(code: string, message: string, httpStatus = 403) {
-    super(message)
-    this.name = 'SupportActionError'
-    this.code = code
-    this.httpStatus = httpStatus
-  }
-}
+// `SupportActionError` now lives in `lib/errors.ts` so non-async
+// exports stay out of `'use server'` files (Next 16+ enforces this).
+// Phase 10 RBAC pass extracted it.
 
 interface LogSupportActionInput {
   action: string

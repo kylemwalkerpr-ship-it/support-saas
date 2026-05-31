@@ -4,8 +4,9 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
+import { requireCan } from '@/lib/rbac'
 import type {
   Profile,
   Role,
@@ -175,10 +176,17 @@ async function loadTargetProfile(
   return data as Profile
 }
 
-function assertSupportCanActOnTarget(actor: Profile, target: Profile) {
-  if (actor.role === 'admin') return
-  // support cannot act on other support agents or admins
-  if (target.role === 'support' || target.role === 'admin') {
+function assertSupportCanActOnTarget(
+  actor: Profile,
+  target: Profile,
+  action: 'user.suspend' | 'user.reactivate'
+) {
+  // Delegate to the central RBAC layer. We re-throw with the
+  // legacy `forbidden_target` code so existing call sites and
+  // dialog copy don't shift semantics.
+  try {
+    requireCan(actor, action, { targetRole: target.role })
+  } catch {
     throw new SupportActionError(
       'forbidden_target',
       'Support agents cannot modify other support or admin accounts',
@@ -402,7 +410,7 @@ export async function suspendUser(input: SuspendUserInput): Promise<Profile> {
 
   const db = createSupabaseAdminClient()
   const target = await loadTargetProfile(db, input.profileId)
-  assertSupportCanActOnTarget(actor, target)
+  assertSupportCanActOnTarget(actor, target, 'user.suspend')
 
   if (target.status === 'suspended') return target
 
@@ -450,7 +458,7 @@ export async function reactivateUser(input: ReactivateUserInput): Promise<Profil
 
   const db = createSupabaseAdminClient()
   const target = await loadTargetProfile(db, input.profileId)
-  assertSupportCanActOnTarget(actor, target)
+  assertSupportCanActOnTarget(actor, target, 'user.reactivate')
 
   if (target.status === 'active') return target
 
@@ -488,13 +496,7 @@ export interface ChangeUserRoleInput {
 
 export async function changeUserRole(input: ChangeUserRoleInput): Promise<Profile> {
   const actor = await requireSupportOrAdmin()
-  if (actor.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Only admins may change user roles',
-      403
-    )
-  }
+  requireCan(actor, 'user.change_role')
   if (!ALL_ROLES.includes(input.newRole)) {
     throw new SupportActionError('invalid_input', 'Unknown role', 400)
   }

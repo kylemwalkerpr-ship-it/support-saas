@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { getUserById } from '@/lib/actions/support-users'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import { Header } from '@/components/dashboard/header'
 import { User360 } from '@/components/support/User360'
 

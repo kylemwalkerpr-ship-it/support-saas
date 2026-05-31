@@ -6,7 +6,7 @@ import {
   assignConversation,
   setConversationStatus,
 } from '@/lib/actions/support-inbox'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { InboxStatus } from '@/lib/types'
 
 type RouteContext = { params: Promise<{ id: string }> }

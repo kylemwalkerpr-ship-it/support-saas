@@ -3,7 +3,7 @@ import {
   searchInbox,
   type SearchInboxInput,
 } from '@/lib/actions/support-inbox'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import type { InboxStatus, InboxChannel } from '@/lib/types'
 
 const VALID_STATUSES: InboxStatus[] = ['open', 'snoozed', 'resolved']

@@ -4,14 +4,15 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import {
   logSupportAction,
-  SupportActionError,
 } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 import {
   processRefund,
   type PortalOrderRow,
 } from '@/lib/actions/support-orders'
 import { processEscrowRelease } from '@/lib/actions/support-escrow'
 import { SUPPORT_REFUND_CAP_CENTS } from '@/lib/constants'
+import { requireCan } from '@/lib/rbac'
 import type {
   Profile,
   Dispute,
@@ -750,13 +751,7 @@ export async function cosignDispute(
   input: CosignDisputeInput
 ): Promise<DecideDisputeResult> {
   const actor = await requireSupportOrAdmin()
-  if (actor.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      'Only admins can co-sign disputes',
-      403
-    )
-  }
+  requireCan(actor, 'dispute.cosign')
   if (input.action !== 'approve' && input.action !== 'reject') {
     throw new SupportActionError('invalid_input', 'Invalid co-sign action', 400)
   }

@@ -3,7 +3,7 @@ import {
   bulkAssignToMe,
   type VerificationType,
 } from '@/lib/actions/support-verifications'
-import { SupportActionError } from '@/lib/actions/support-audit'
+import { SupportActionError } from '@/lib/errors'
 
 const VALID_TYPES: VerificationType[] = ['attorney', 'consultant', 'id', 'bar']
 
