@@ -776,8 +776,12 @@ export async function processRefund(
 
     let portalRes: Response
     try {
+      // Portal endpoint accepts Bearer service-token auth (PORTAL_SERVICE_TOKEN
+      // env var, paired with SUPPORT_SAAS_SYSTEM_PROFILE_ID for attribution).
+      // The path is /api/admin/escrow/[orderId]/refund — handles escrow
+      // accounting + wallet credit + audit + gateway-aware refund routing.
       portalRes = await fetch(
-        'https://portal.yousafeconsultancy.com/api/admin/wallet/topup-refund',
+        `https://portal.yousafeconsultancy.com/api/admin/escrow/${encodeURIComponent(order.id)}/refund`,
         {
           method: 'POST',
           headers: {
@@ -785,7 +789,6 @@ export async function processRefund(
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            orderId: order.id,
             amountCents,
             reason,
             gateway,
