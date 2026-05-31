@@ -1,43 +1,95 @@
+import { redirect } from 'next/navigation'
+import {
+  MessagesSquare,
+  Scale,
+  ShieldCheck,
+  Flag,
+  CircleDollarSign,
+  Bell,
+} from 'lucide-react'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
-import { getSupportDashboardData } from '@/lib/actions/chat'
-import { SupportDashboard } from '@/components/chat/support-dashboard'
-import { Mail } from 'lucide-react'
+import { getHomeMetrics } from '@/lib/actions/support-metrics'
+import { Header } from '@/components/dashboard/header'
+import { MetricsTile } from '@/components/support/MetricsTile'
+
+function formatUSD(cents: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(cents / 100)
+}
 
 export default async function DashboardPage() {
   const profile = await getOrCreateProfile()
-
   if (!profile || !['admin', 'support'].includes(profile.role)) {
-    return null
+    redirect('/sign-in')
   }
 
-  let data
-  try {
-    data = await getSupportDashboardData()
-  } catch (error) {
-    console.error('[support-dashboard] recovery fallback', error)
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 mb-6">
-            <Mail className="h-8 w-8 text-blue-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">
-            Workspace reconnect needed
-          </h1>
-          <p className="text-gray-500 leading-relaxed mb-6">
-            Your support account is signed in, but the chat workspace could not
-            finish loading. Refresh the page or sign in again.
-          </p>
-          <a
-            href="/sign-in"
-            className="inline-flex rounded-lg bg-[#3C3B6E] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-          >
-            Return to sign in
-          </a>
-        </div>
+  const metrics = await getHomeMetrics()
+
+  return (
+    <div>
+      <Header
+        title={`Welcome${profile.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}`}
+        subtitle="Agent home — phase 9 will deepen these metrics"
+      />
+
+      <div className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
+        <MetricsTile
+          title="My open conversations"
+          value={metrics.openConversationsAssignedToMe}
+          delta="assigned to me"
+          href="/inbox"
+          icon={MessagesSquare}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-50"
+        />
+        <MetricsTile
+          title="Open disputes"
+          value={metrics.openDisputesTeamWide}
+          delta="team-wide"
+          href="/orders?hasOpenDispute=1"
+          icon={Scale}
+          iconColor="text-rose-600"
+          iconBg="bg-rose-50"
+        />
+        <MetricsTile
+          title="Pending verifications"
+          value={metrics.pendingVerifications}
+          delta="phase 6 will deepen this"
+          href="/dashboard"
+          icon={ShieldCheck}
+          iconColor="text-emerald-600"
+          iconBg="bg-emerald-50"
+        />
+        <MetricsTile
+          title="Flagged content"
+          value={metrics.flaggedContentLast24h}
+          delta="last 24h"
+          href="/dashboard"
+          icon={Flag}
+          iconColor="text-amber-600"
+          iconBg="bg-amber-50"
+        />
+        <MetricsTile
+          title="Refunds today"
+          value={`${metrics.refundsTodayCount} · ${formatUSD(metrics.refundsTodayTotalCents)}`}
+          delta="processed since 00:00 UTC"
+          href="/orders"
+          icon={CircleDollarSign}
+          iconColor="text-purple-600"
+          iconBg="bg-purple-50"
+        />
+        <MetricsTile
+          title="My notifications"
+          value={metrics.myOpenNotifications}
+          delta="unread"
+          href="/dashboard"
+          icon={Bell}
+          iconColor="text-gray-700"
+          iconBg="bg-gray-100"
+        />
       </div>
-    )
-  }
-
-  return <SupportDashboard initialData={data} />
+    </div>
+  )
 }
