@@ -1,17 +1,20 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Mail, KeyRound } from 'lucide-react'
+import { KeyRound } from 'lucide-react'
 import { formatDate, formatRelativeDate, getInitials } from '@/lib/utils'
 import { SuspensionDialog } from './SuspensionDialog'
 import { RoleChangeDialog } from './RoleChangeDialog'
 import { AddNoteDialog } from './AddNoteDialog'
+import { IssueCreditDialog } from './IssueCreditDialog'
+import { SendEmailDialog } from './SendEmailDialog'
 import type { User360Bundle } from '@/lib/actions/support-users'
-import type { Role } from '@/lib/types'
+import type { Profile, Role } from '@/lib/types'
 
 interface User360Props {
   bundle: User360Bundle
   viewerRole: Role
+  viewer: Pick<Profile, 'full_name' | 'email'>
 }
 
 const ROLE_BADGE: Record<Role, string> = {
@@ -45,7 +48,7 @@ function formatAmount(value: number | null, currency = 'USD'): string {
   }).format(value)
 }
 
-export function User360({ bundle, viewerRole }: User360Props) {
+export function User360({ bundle, viewerRole, viewer }: User360Props) {
   const { profile, orders, wallet, conversations, audit, notes } = bundle
   const isAdmin = viewerRole === 'admin'
   // Support cannot suspend/reactivate/change-role another support or admin.
@@ -106,10 +109,11 @@ export function User360({ bundle, viewerRole }: User360Props) {
               currentRole={profile.role}
               visible={isAdmin}
             />
-            <Button variant="outline" size="sm" disabled title="Coming in phase 8">
-              <Mail className="mr-2 h-4 w-4" />
-              Email (phase 8)
-            </Button>
+            <SendEmailDialog
+              profileId={profile.id}
+              user={{ email: profile.email, full_name: profile.full_name }}
+              agent={{ name: viewer.full_name, email: viewer.email }}
+            />
             <Button variant="outline" size="sm" disabled title="Coming in phase 10">
               <KeyRound className="mr-2 h-4 w-4" />
               Reset password (phase 10)
@@ -206,36 +210,32 @@ export function User360({ bundle, viewerRole }: User360Props) {
 
         <TabsContent value="wallet">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Wallet</CardTitle>
+              <IssueCreditDialog
+                profileId={profile.id}
+                viewerRole={viewerRole}
+              />
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               {wallet ? (
-                <>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <Field
-                      label="Balance"
-                      value={formatCents(wallet.balance_cents, wallet.currency)}
-                    />
-                    <Field label="Currency" value={wallet.currency.toUpperCase()} />
-                    <Field
-                      label="Last updated"
-                      value={wallet.updated_at ? formatDate(wallet.updated_at) : '—'}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Wallet ledger and credit/debit tools land in phase 8.
-                  </p>
-                </>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <Field
+                    label="Balance"
+                    value={formatCents(wallet.balance_cents, wallet.currency)}
+                  />
+                  <Field label="Currency" value={wallet.currency.toUpperCase()} />
+                  <Field
+                    label="Last updated"
+                    value={wallet.updated_at ? formatDate(wallet.updated_at) : '—'}
+                  />
+                </div>
               ) : (
                 <p className="text-sm text-gray-500">
-                  No wallet exists for this profile yet (will be provisioned on first
-                  top-up in phase 8).
+                  No wallet exists for this profile yet — it will be provisioned
+                  on the first credit or top-up.
                 </p>
               )}
-              <Button size="sm" variant="outline" disabled>
-                Issue credit (phase 8)
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>

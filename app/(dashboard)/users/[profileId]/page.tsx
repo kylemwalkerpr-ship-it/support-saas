@@ -41,7 +41,11 @@ export default async function UserDetailPage({ params }: { params: Params }) {
           <ChevronLeft className="mr-1 h-3.5 w-3.5" />
           Back to users
         </Link>
-        <User360 bundle={bundle} viewerRole={viewer.role} />
+        <User360
+          bundle={bundle}
+          viewerRole={viewer.role}
+          viewer={{ full_name: viewer.full_name, email: viewer.email }}
+        />
       </div>
     </div>
   )

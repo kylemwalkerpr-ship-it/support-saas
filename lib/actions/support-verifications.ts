@@ -6,6 +6,7 @@ import {
   logSupportAction,
   SupportActionError,
 } from '@/lib/actions/support-audit'
+import { sendSupportEmail } from '@/lib/email'
 import type { Profile } from '@/lib/types'
 
 // ============================================================
@@ -636,13 +637,18 @@ function validateNotes(notes: string): string {
   return trimmed.slice(0, 2000)
 }
 
+interface DecisionApplicant {
+  email: string | null
+  full_name: string | null
+}
+
 async function decideAttorney(
   db: ReturnType<typeof createSupabaseAdminClient>,
   actor: Profile,
   id: string,
   action: VerificationAction,
   notes: string
-): Promise<{ status: VerificationStatus }> {
+): Promise<{ status: VerificationStatus; applicant: DecisionApplicant }> {
   const { data: app, error: fetchErr } = await db
     .from('attorney_applications')
     .select(
@@ -662,6 +668,10 @@ async function decideAttorney(
   }
 
   const now = new Date().toISOString()
+  const applicant: DecisionApplicant = {
+    email: app.email ?? null,
+    full_name: app.full_name ?? null,
+  }
 
   if (action === 'approve') {
     const { error: updErr } = await db
@@ -705,7 +715,7 @@ async function decideAttorney(
         () => null,
         () => null
       )
-    return { status: 'approved' }
+    return { status: 'approved', applicant }
   }
 
   if (action === 'reject') {
@@ -737,7 +747,7 @@ async function decideAttorney(
         () => null,
         () => null
       )
-    return { status: 'declined' }
+    return { status: 'declined', applicant }
   }
 
   // request_changes — keep application 'pending' but record the request and
@@ -764,7 +774,7 @@ async function decideAttorney(
       () => null,
       () => null
     )
-  return { status: 'changes_requested' }
+  return { status: 'changes_requested', applicant }
 }
 
 async function decideConsultant(
@@ -773,7 +783,7 @@ async function decideConsultant(
   id: string,
   action: VerificationAction,
   _notes: string
-): Promise<{ status: VerificationStatus }> {
+): Promise<{ status: VerificationStatus; applicant: DecisionApplicant }> {
   const { data: profile, error } = await db
     .from('profiles')
     .select('id, role, status, email, full_name')
@@ -795,6 +805,10 @@ async function decideConsultant(
       `Consultant intake already ${profile.status}`,
       409
     )
+  }
+  const applicant: DecisionApplicant = {
+    email: profile.email ?? null,
+    full_name: profile.full_name ?? null,
   }
 
   if (action === 'approve') {
@@ -818,7 +832,7 @@ async function decideConsultant(
         () => null,
         () => null
       )
-    return { status: 'approved' }
+    return { status: 'approved', applicant }
   }
 
   if (action === 'reject') {
@@ -827,12 +841,88 @@ async function decideConsultant(
       .update({ status: 'declined' })
       .eq('id', id)
     if (upd) throw new SupportActionError('db_error', upd.message, 500)
-    return { status: 'declined' }
+    return { status: 'declined', applicant }
   }
 
   // request_changes — leave status pending; the audit log captures the
-  // request and the macro-driven email (TODO Phase 8) will go out.
-  return { status: 'changes_requested' }
+  // request and the verification-decision email goes out below.
+  return { status: 'changes_requested', applicant }
+}
+
+// ============================================================
+// Inline transactional templates (Phase 8)
+//
+// Verification decision emails are NOT pulled from the macros table — they
+// are immutable transactional templates owned by this action so support
+// agents can't accidentally re-word a regulatory communication. Keep them
+// short, neutral, and link back to the portal so the applicant can act.
+// ============================================================
+
+const PORTAL_URL =
+  process.env.PORTAL_PUBLIC_URL ?? 'https://yousafeconsultancy.com'
+
+interface VerificationEmailTemplate {
+  subject: string
+  html: string
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function renderVerificationEmail(
+  action: VerificationAction,
+  type: VerificationType,
+  applicantName: string | null,
+  notes: string
+): VerificationEmailTemplate {
+  const greetingName = applicantName?.trim() || 'there'
+  const typeLabel =
+    type === 'attorney' ? 'attorney' : type === 'consultant' ? 'consultant' : type
+  const safeName = escapeHtml(greetingName)
+  const safeNotes = escapeHtml(notes)
+
+  if (action === 'approve') {
+    return {
+      subject: 'Your application is approved',
+      html: [
+        `<p>Hi ${safeName},</p>`,
+        `<p>Good news — your ${escapeHtml(typeLabel)} application has been approved.`,
+        ` You can sign in to your dashboard to finish setup:</p>`,
+        `<p><a href="${escapeHtml(PORTAL_URL)}">${escapeHtml(PORTAL_URL)}</a></p>`,
+        `<p>Welcome to YouSafe.</p>`,
+        `<p>— YouSafe Support</p>`,
+      ].join('\n'),
+    }
+  }
+  if (action === 'request_changes') {
+    return {
+      subject: 'Action needed on your application',
+      html: [
+        `<p>Hi ${safeName},</p>`,
+        `<p>We reviewed your ${escapeHtml(typeLabel)} application and need a few changes before we can move forward. Notes from the reviewer:</p>`,
+        `<blockquote style="border-left:3px solid #d1d5db;padding:0 12px;color:#374151;">${safeNotes.replace(/\n/g, '<br />')}</blockquote>`,
+        `<p>You can update your application here: <a href="${escapeHtml(PORTAL_URL)}">${escapeHtml(PORTAL_URL)}</a></p>`,
+        `<p>— YouSafe Support</p>`,
+      ].join('\n'),
+    }
+  }
+  // reject
+  return {
+    subject: 'Application update',
+    html: [
+      `<p>Hi ${safeName},</p>`,
+      `<p>Thanks for applying to YouSafe. After review we&apos;re not able to move your ${escapeHtml(typeLabel)} application forward at this time. Notes from the reviewer:</p>`,
+      `<blockquote style="border-left:3px solid #d1d5db;padding:0 12px;color:#374151;">${safeNotes.replace(/\n/g, '<br />')}</blockquote>`,
+      `<p>If your circumstances change you&apos;re welcome to reapply.</p>`,
+      `<p>— YouSafe Support</p>`,
+    ].join('\n'),
+  }
 }
 
 async function decideEntry(
@@ -855,19 +945,52 @@ async function decideEntry(
       ? await decideAttorney(db, actor, id, action, notes)
       : await decideConsultant(db, actor, id, action, notes)
 
+  // Best-effort transactional email — do NOT block the verification decision
+  // if Resend is unreachable. Any failure is recorded in the audit metadata
+  // so we can spot patterns later.
+  let emailId: string | null = null
+  let emailError: string | null = null
+  if (result.applicant.email) {
+    try {
+      const tpl = renderVerificationEmail(
+        action,
+        type,
+        result.applicant.full_name,
+        notes
+      )
+      const sent = await sendSupportEmail({
+        to: result.applicant.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        tags: {
+          source: 'support_saas',
+          verification_type: type,
+          verification_action: action,
+        },
+      })
+      emailId = sent.id
+    } catch (err) {
+      emailError = err instanceof Error ? err.message : 'unknown'
+      console.warn('[decideEntry] verification email failed', err)
+    }
+  }
+
   await logSupportAction({
     action: `verification.${action}`,
     targetType: `verification:${type}`,
     targetId: id,
     reason: notes,
-    metadata: { type, action, new_status: result.status },
+    metadata: {
+      type,
+      action,
+      new_status: result.status,
+      email_id: emailId,
+      email_error: emailError,
+      email_to: result.applicant.email,
+    },
   })
 
-  // TODO (Phase 8): send macro-driven approval / decline / changes email.
-  // Hook lives here once the email infra ships:
-  //   await sendVerificationEmail({ type, action, applicantEmail, applicantName, notes })
-
-  return result
+  return { status: result.status }
 }
 
 export async function approveVerification(
