@@ -135,6 +135,100 @@ export interface ChatNotification {
   created_at: string
 }
 
+// ============================================================
+// Support staff parity — Phase 1 domain types
+// ============================================================
+
+export type SupportActorRole = 'support' | 'admin'
+
+export type DisputeStatus =
+  | 'open'
+  | 'triage'
+  | 'resolved_refund'
+  | 'resolved_release'
+  | 'resolved_split'
+  | 'rejected'
+
+export type ModerationCategory = 'spam' | 'abuse' | 'scam' | 'duplicate' | 'other'
+
+export type ModerationTargetType = 'gig' | 'message' | 'review' | 'profile'
+
+export type ModerationStatus = 'pending' | 'dismissed' | 'actioned'
+
+export type NotificationType =
+  | 'new_dispute'
+  | 'new_verification'
+  | 'flag_raised'
+  | 'assignment'
+  | 'audit'
+  | 'system'
+
+export interface SupportAuditLogEntry {
+  id: string
+  actor_id: string
+  actor_role: SupportActorRole
+  action: string
+  target_type: string
+  target_id: string
+  reason: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface SupportMacro {
+  id: string
+  owner_id: string | null
+  title: string
+  body: string
+  tags: string[]
+  language: string
+  is_archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Dispute {
+  id: string
+  order_id: string
+  opened_by: string
+  opened_by_role: string
+  against_id: string
+  against_role: string
+  reason: string
+  status: DisputeStatus
+  resolution_notes: string | null
+  resolved_by: string | null
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ModerationFlag {
+  id: string
+  flagger_id: string | null
+  target_type: ModerationTargetType
+  target_id: string
+  reason: string
+  category: ModerationCategory
+  status: ModerationStatus
+  decided_by: string | null
+  decided_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SupportNotification {
+  id: string
+  recipient_id: string
+  type: NotificationType | string
+  subject_type: string | null
+  subject_id: string | null
+  title: string
+  body: string | null
+  read_at: string | null
+  created_at: string
+}
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cart: 'In Cart',
   queued: 'Queued',
