@@ -26,11 +26,13 @@ const navByRole: Record<Role, NavItem[]> = {
   consultant: [],
   support: [
     { label: 'Support Inbox', href: '/dashboard', icon: MessagesSquare },
+    { label: 'Users', href: '/users', icon: Users },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
   ],
   admin: [
     { label: 'Support Inbox', href: '/dashboard', icon: MessagesSquare },
+    { label: 'Users', href: '/users', icon: Users },
     { label: 'Support Agents', href: '/admin/users', icon: Users },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
