@@ -49,12 +49,19 @@ export default function SignUpPage() {
   }, [])
 
   if (hasTicket !== true) {
+    // Ahrefs (and other crawlers without a Clerk invite ticket) only ever
+    // see this branch — the ticketed sign-up form is gated to a real
+    // Clerk session. Give them an H1 so the page doesn't trip Ahrefs'
+    // "h1-missing" rule even though the route is noindex.
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
         style={{ background: '#E8E8E8', color: '#1F2937' }}
       >
-        Redirecting…
+        <div className="text-center">
+          <h1 className="font-serif text-3xl font-medium text-[#1d2433]">YouSafe Support sign-up</h1>
+          <p className="mt-2 text-sm text-[#4a4f5b]">Redirecting…</p>
+        </div>
       </div>
     )
   }
