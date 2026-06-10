@@ -343,7 +343,7 @@ export function SupportDashboard({ initialData }: { initialData: SupportDashboar
                           setReply('')
                           runAction(() => sendAgentMessage(selected.id, body), 'Reply sent')
                         }}
-                        placeholder="Reply as Yousafe Support..."
+                        placeholder="Reply as YouSafe Support..."
                       />
                       <div className="mt-3 flex justify-end">
                         <Button

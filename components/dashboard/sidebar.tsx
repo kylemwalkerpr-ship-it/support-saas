@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -88,16 +89,14 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
       {/* Logo */}
       <a
         href="https://yousafeconsultancy.com"
-        aria-label="Back to Yousafe Consultancy"
+        aria-label="Back to YouSafe Consultancy"
         className="flex h-16 items-center gap-2.5 px-6 no-underline"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.12)', color: 'inherit' }}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: '#B22234' }}>
-          <span className="text-sm font-bold text-white">Y</span>
-        </div>
+        <Image src="/logo.png" alt="YouSafe Consultancy" width={36} height={36} className="h-9 w-9 rounded bg-white object-contain" />
         <div>
-          <p className="text-sm font-semibold text-white">Yousafe</p>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>Consultancy</p>
+          <p className="text-sm font-semibold text-white">YouSafe</p>
+          <p className="text-xs font-semibold" style={{ color: '#C4A45A' }}>Your Safe Path to Success.</p>
         </div>
       </a>
 

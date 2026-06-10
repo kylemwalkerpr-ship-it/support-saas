@@ -1,6 +1,7 @@
 'use client'
 
 import { SignIn } from '@clerk/nextjs'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
 const appearance = {
@@ -46,8 +47,11 @@ export default function SignInPage() {
       <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(circle_at_0%_0%,rgba(178,34,52,.08)_0%,transparent_36%),radial-gradient(circle_at_100%_0%,rgba(60,59,110,.10)_0%,transparent_40%),radial-gradient(circle_at_50%_100%,rgba(135,168,106,.12)_0%,transparent_46%)]" />
       <section className="relative mx-auto w-full max-w-xl">
         <a href="https://yousafeconsultancy.com" className="inline-flex items-center gap-3 text-sm font-semibold text-[#1d2433] no-underline">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#3C3B6E] font-serif text-lg text-white">Y</span>
-          YouSafe Support
+          <Image src="/logo.png" alt="YouSafe Consultancy" width={44} height={44} className="h-11 w-11 object-contain" />
+          <span className="flex flex-col leading-tight">
+            <span>YouSafe Support</span>
+            <span className="text-xs font-semibold text-[#0E7C66]">Your Safe Path to Success.</span>
+          </span>
         </a>
         <p className="mt-10 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#4a4f5b]">Support workspace</p>
         <h1 className="mt-3 font-serif text-4xl font-medium leading-tight tracking-tight sm:text-5xl">Welcome back.</h1>

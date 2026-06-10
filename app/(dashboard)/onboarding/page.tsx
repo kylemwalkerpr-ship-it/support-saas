@@ -25,7 +25,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [selected, setSelected] = useState<Role | null>('support')
   const [fullName, setFullName] = useState('')
-  const [avatarSeed, setAvatarSeed] = useState('Yousafe Support')
+  const [avatarSeed, setAvatarSeed] = useState('YouSafe Support')
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
 
@@ -63,7 +63,7 @@ export default function OnboardingPage() {
           <div className="rounded-xl border border-gray-200 bg-white p-5">
             <div className="mb-4 flex items-center gap-4">
               <img
-                src={`/api/avatar?seed=${encodeURIComponent(avatarSeed || fullName || 'Yousafe Support')}`}
+                src={`/api/avatar?seed=${encodeURIComponent(avatarSeed || fullName || 'YouSafe Support')}`}
                 alt=""
                 className="h-14 w-14 rounded-full border border-gray-200"
               />
@@ -79,7 +79,7 @@ export default function OnboardingPage() {
                 value={fullName}
                 onChange={(event) => {
                   setFullName(event.target.value)
-                  if (!avatarSeed || avatarSeed === 'Yousafe Support') {
+                  if (!avatarSeed || avatarSeed === 'YouSafe Support') {
                     setAvatarSeed(event.target.value)
                   }
                 }}

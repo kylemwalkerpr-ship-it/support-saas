@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       await db.from('chat_messages').insert({
         conversation_id: conversationId,
         sender_type: 'system',
-        sender_name: 'Yousafe Support',
+        sender_name: 'YouSafe Support',
         body: 'You are in the live support queue. A team member will join as soon as possible.',
       })
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       const { error: aiMessageError } = await db.from('chat_messages').insert({
         conversation_id: conversationId,
         sender_type: 'ai',
-        sender_name: 'Yousafe Chat Agent',
+        sender_name: 'YouSafe Chat Agent',
         body: answer,
       })
       if (aiMessageError) {

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { EstateFooter } from '@/components/EstateFooter'
 import { ArrowRight, Users, MessagesSquare, Shield } from 'lucide-react'
 
@@ -8,11 +9,14 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 flex items-center justify-between px-8 py-4 border-b border-stone-400/40 bg-stone-300/80 backdrop-blur supports-[backdrop-filter]:bg-stone-300/60">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: '#3C3B6E' }}>
-            <span className="text-sm font-bold text-white">Y</span>
-          </div>
-          <span className="text-lg font-bold" style={{ color: '#1F2937' }}>
-            Yousafe <span style={{ color: '#3C3B6E' }}>Consultancy</span>
+          <Image src="/logo.png" alt="YouSafe Consultancy" width={40} height={40} className="h-10 w-10 object-contain" />
+          <span className="flex flex-col leading-tight">
+            <span className="text-lg font-bold" style={{ color: '#1F2937' }}>
+              YouSafe <span style={{ color: '#3C3B6E' }}>Consultancy</span>
+            </span>
+            <span className="text-xs font-semibold" style={{ color: '#0E7C66' }}>
+              Your Safe Path to Success.
+            </span>
           </span>
         </div>
         <div className="flex items-center gap-3">

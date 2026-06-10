@@ -173,7 +173,7 @@ export function CustomerChatWidget() {
       )
     }
     if (loading) {
-      result.push(<div key="typing" className="text-xs text-gray-500">Yousafe is typing...</div>)
+      result.push(<div key="typing" className="text-xs text-gray-500">YouSafe is typing...</div>)
     }
     if (error) {
       result.push(
@@ -204,7 +204,7 @@ export function CustomerChatWidget() {
         )}
         <div>
           <div className="flex items-center gap-2 text-sm font-bold">
-            {agentName && conversation?.status === 'assigned' ? agentName : 'Yousafe Support'}
+            {agentName && conversation?.status === 'assigned' ? agentName : 'YouSafe Support'}
           </div>
           <p className="mt-0.5 text-xs text-white/75">{statusCopy}</p>
         </div>
@@ -259,7 +259,7 @@ export function CustomerChatWidget() {
               open && 'hidden'
             )}
             style={{ background: '#3C3B6E' }}
-            aria-label="Open Yousafe chat support"
+            aria-label="Open YouSafe chat support"
           >
             <MessageCircle className="h-6 w-6" />
           </button>

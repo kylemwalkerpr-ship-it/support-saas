@@ -23,7 +23,7 @@ function escapeXml(value: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const seed = request.nextUrl.searchParams.get('seed') || 'Yousafe Support'
+  const seed = request.nextUrl.searchParams.get('seed') || 'YouSafe Support'
   const initials = escapeXml(initialsFromSeed(seed))
   const color = colorForSeed(seed)
   const svg = `
