@@ -8,6 +8,7 @@ export const ESTATE_FOOTER_COLUMNS: FooterColumn[] = [
       { label: 'USA — F-1 student visas', href: 'https://usa.yousafeconsultancy.com/' },
       { label: 'Canada — study permits', href: 'https://ca.yousafeconsultancy.com/' },
       { label: 'UK — Student Route', href: 'https://uk.yousafeconsultancy.com/' },
+      { label: 'Australia — student visas', href: 'https://au.yousafeconsultancy.com/' },
       { label: 'Country guides', href: 'https://usa.yousafeconsultancy.com/from/' },
       { label: 'University guides', href: 'https://usa.yousafeconsultancy.com/universities/' },
     ],
@@ -19,6 +20,7 @@ export const ESTATE_FOOTER_COLUMNS: FooterColumn[] = [
       { label: 'US immigration & status', href: 'https://legal.yousafeconsultancy.com/us/' },
       { label: 'UK immigration & tenancy', href: 'https://legal.yousafeconsultancy.com/uk/' },
       { label: 'Canada study & PR', href: 'https://legal.yousafeconsultancy.com/ca/' },
+      { label: 'Australia student visas', href: 'https://legal.yousafeconsultancy.com/au/' },
     ],
   },
   {
@@ -51,7 +53,7 @@ export const ESTATE_FOOTER_LEGAL: FooterLink[] = [
 
 export const ESTATE_FOOTER_SOCIAL: FooterLink[] = [
   { label: 'LinkedIn', href: 'https://linkedin.com/company/yousafe-consultancy' },
-  { label: 'X / Twitter', href: 'https://x.com/yousafeconsult' },
+  { label: 'X / Twitter', href: 'https://x.com/yousafeconsul' },
   { label: 'Facebook', href: 'https://facebook.com/yousafeconsultancy' },
   { label: 'Instagram', href: 'https://instagram.com/yousafeconsultancy' },
 ]
