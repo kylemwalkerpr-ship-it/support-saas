@@ -11,6 +11,17 @@ const clerkPublishableKey =
   'pk_live_Y2xlcmsucG9ydGFsLnlvdXNhZmVjb25zdWx0YW5jeS5jb20k'
 
 export const metadata = {
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  manifest: '/site.webmanifest',
   metadataBase: new URL('https://support.yousafeconsultancy.com'),
   title: 'YouSafe Support — Customer Service & Live Chat',
   description: 'Customer support inbox and live chat management for YouSafe Consultancy.',
@@ -29,18 +40,20 @@ export const metadata = {
     siteName: 'YouSafe Support',
     locale: 'en_US',
     url: 'https://support.yousafeconsultancy.com',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'YouSafe Support — Customer Service & Live Chat',
     description: 'Customer support for YouSafe Consultancy.',
+    images: ['/og-image.png'],
   },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#f3eee5',
+  themeColor: '#0B3B78',
 }
 
 export default async function RootLayout({
