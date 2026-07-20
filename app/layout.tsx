@@ -25,11 +25,9 @@ export const metadata = {
   metadataBase: new URL('https://support.yousafeconsultancy.com'),
   title: 'YouSafe Support — Customer Service & Live Chat',
   description: 'Customer support inbox and live chat management for YouSafe Consultancy.',
-  // Support dashboard is an internal members area — keep it OUT of indexes.
-  robots: {
-    index: false,
-    follow: true,
-  },
+  // Allow public routes (/, /sign-in, /sign-up) to be indexed for branded SERP capture.
+  // Private auth-gated routes (/dashboard, /admin, /onboarding) are blocked by middleware
+  // and will never be reachable by crawlers.
   alternates: {
     canonical: '/',
   },
