@@ -8,6 +8,13 @@ import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { SupportActionError } from '@/lib/errors'
 
 export async function GET(request: Request) {
+  // ── abort guard: client disconnect → fast 499 ──
+  if (request.signal.aborted) {
+    return NextResponse.json({ error: 'Request cancelled by client' }, { status: 499 })
+  }
+  const getAbortHandler = () => { /* no-op */ }
+  request.signal.addEventListener('abort', getAbortHandler)
+
   try {
     const me = await getOrCreateProfile()
     if (!me) {
@@ -35,6 +42,12 @@ export async function GET(request: Request) {
       headers: { 'Cache-Control': 'no-store' },
     })
   } catch (error) {
+    // CPU timeout detection (Cloudflare kills workers mid-flight)
+    const message = error instanceof Error ? error.message : String(error)
+    const isCpuTimeout = /CPU|timeout|abort|budget|exceeded|terminated/i.test(message)
+    if (isCpuTimeout) {
+      return NextResponse.json({ error: message }, { status: 503 })
+    }
     if (error instanceof SupportActionError) {
       return NextResponse.json(
         { error: error.message, code: error.code },
@@ -43,6 +56,8 @@ export async function GET(request: Request) {
     }
     console.error('[api/support/notifications GET] unexpected error', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  } finally {
+    request.signal.removeEventListener('abort', getAbortHandler)
   }
 }
 
@@ -52,6 +67,13 @@ interface MarkBody {
 }
 
 export async function POST(request: Request) {
+  // ── abort guard: client disconnect → fast 499 ──
+  if (request.signal.aborted) {
+    return NextResponse.json({ error: 'Request cancelled by client' }, { status: 499 })
+  }
+  const postAbortHandler = () => { /* no-op */ }
+  request.signal.addEventListener('abort', postAbortHandler)
+
   try {
     const me = await getOrCreateProfile()
     if (!me) {
@@ -81,6 +103,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'invalid_action' }, { status: 400 })
   } catch (error) {
+    // CPU timeout detection (Cloudflare kills workers mid-flight)
+    const message = error instanceof Error ? error.message : String(error)
+    const isCpuTimeout = /CPU|timeout|abort|budget|exceeded|terminated/i.test(message)
+    if (isCpuTimeout) {
+      return NextResponse.json({ error: message }, { status: 503 })
+    }
     if (error instanceof SupportActionError) {
       return NextResponse.json(
         { error: error.message, code: error.code },
@@ -89,5 +117,7 @@ export async function POST(request: Request) {
     }
     console.error('[api/support/notifications POST] unexpected error', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  } finally {
+    request.signal.removeEventListener('abort', postAbortHandler)
   }
 }
