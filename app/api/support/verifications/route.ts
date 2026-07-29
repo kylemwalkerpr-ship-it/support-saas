@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { CPU_TIMEOUT_REGEX } from '@/lib/cpuTimeout'
 import {
   searchVerifications,
   type VerificationType,
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
   } catch (error) {
     // CPU timeout detection (Cloudflare kills workers mid-flight)
     const message = error instanceof Error ? error.message : String(error)
-    const isCpuTimeout = /CPU|timeout|abort|budget|exceeded|terminated/i.test(message)
+    const isCpuTimeout = CPU_TIMEOUT_REGEX.test(message)
     if (isCpuTimeout) {
       return NextResponse.json({ error: message }, { status: 503 })
     }
