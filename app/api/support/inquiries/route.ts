@@ -40,7 +40,16 @@ export async function GET(req: Request) {
   if (status !== 'all') qb = qb.eq('status', status)
   if (archived === 'yes') qb = qb.not('archived_at', 'is', null)
   if (archived === 'no') qb = qb.is('archived_at', null)
-  if (q) qb = qb.or(`case_type_label.ilike.%${q}%,country.ilike.%${q}%,full_name.ilike.%${q}%`)
+  if (q) {
+    // FTS on full_name (indexed via idx_consultant_applications_name_fts pattern);
+    // case_type_label and country are short labels — keep ilike for those.
+    const safeQ = q.replace(/[^a-zA-Z0-9\s'-]/g, ' ').trim().slice(0, 60)
+    if (safeQ && safeQ.length >= 2) {
+      qb = qb.or(`full_name.fts.${safeQ},case_type_label.ilike.%${q}%,country.ilike.%${q}%`)
+    } else {
+      qb = qb.or(`case_type_label.ilike.%${q}%,country.ilike.%${q}%`)
+    }
+  }
 
   const { data: inquiries, error, count } = await qb
   if (error) {
