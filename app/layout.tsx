@@ -2,6 +2,7 @@ import './globals.css'
 import './portal-themes.css'
 import type { Viewport } from 'next'
 import { headers } from 'next/headers'
+import Script from 'next/script'
 import { ClerkProvider } from '@clerk/nextjs'
 import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
 import { TranslationProvider } from '@/components/translation-provider'
@@ -9,6 +10,19 @@ import { TranslationProvider } from '@/components/translation-provider'
 const clerkPublishableKey =
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
   'pk_live_Y2xlcmsucG9ydGFsLnlvdXNhZmVjb25zdWx0YW5jeS5jb20k'
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || 'G-FTKZCVNW4B'
+const GA_LINKER_DOMAINS = [
+  'yousafeconsultancy.com',
+  'usa.yousafeconsultancy.com',
+  'ca.yousafeconsultancy.com',
+  'uk.yousafeconsultancy.com',
+  'au.yousafeconsultancy.com',
+  'legal.yousafeconsultancy.com',
+  'market.yousafeconsultancy.com',
+  'portal.yousafeconsultancy.com',
+  'support.yousafeconsultancy.com',
+] as const
 
 export const metadata = {
   icons: {
@@ -61,9 +75,28 @@ export default async function RootLayout({
 }) {
   const h = await headers()
   const lang = h.get('x-lang') || 'en'
+  const gaLinkerDomains = JSON.stringify(GA_LINKER_DOMAINS)
+
   return (
     <html lang={lang}>
       <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              linker: {
+                domains: ${gaLinkerDomains},
+                accept_incoming: true
+              }
+            });
+          `}
+        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
