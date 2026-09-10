@@ -1,203 +1,119 @@
 #!/usr/bin/env node
 /**
- * seo-audit-guard.mjs — Estate SEO guard for YouSafe Support
+ * seo-audit-guard.mjs — deterministic SEO contract guard for YouSafe Support.
  *
- * The support app is mostly auth-gated. Checks focus on the public surface:
- *   1. sitemap.xml exists, is non-empty, and excludes authentication routes
- *   2. the public home page remains indexable
- *   3. authentication routes are noindex utility surfaces
- *   4. the public home page carries JSON-LD
+ * This app deploys through Next/OpenNext and does not expose a stable static
+ * export directory after `next build`, so the release gate validates the
+ * source contracts that generate metadata, sitemap and robots output.
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs'
-import { dirname, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const root = dirname(__dirname)
+const root = process.cwd()
+const read = (file) => readFileSync(join(root, file), 'utf8')
+const issues = []
 
-function findOutDir() {
-  for (const candidate of [
-    join(root, '.vercel', 'output', 'static'),
-    join(root, 'out'),
-  ]) {
-    if (existsSync(candidate)) return candidate
+function requireFile(file) {
+  const full = join(root, file)
+  if (!existsSync(full)) {
+    issues.push({ severity: 'high', check: 'missing-source', path: file, detail: 'required SEO source file is missing' })
+    return ''
   }
-  return null
+  return read(file)
 }
 
-const OUT = findOutDir()
-if (!OUT) {
-  console.error('❌ No static output directory found (.vercel/output/static/ or out/)')
-  console.error('   Run a production build first.')
+const layout = requireFile('app/layout.tsx')
+const sitemap = requireFile('app/sitemap.ts')
+const robots = requireFile('app/robots.ts')
+const signIn = requireFile('app/sign-in/layout.tsx')
+const signUp = requireFile('app/sign-up/layout.tsx')
+
+// Public home metadata contract.
+for (const needle of [
+  "metadataBase: new URL('https://support.yousafeconsultancy.com')",
+  "canonical: '/'",
+  "'@type': 'WebSite'",
+  "url: 'https://support.yousafeconsultancy.com'",
+]) {
+  if (!layout.includes(needle)) {
+    issues.push({ severity: 'high', check: 'public-home-metadata', path: 'app/layout.tsx', detail: `missing ${needle}` })
+  }
+}
+if (/robots\s*:\s*\{[^}]*index\s*:\s*false/s.test(layout)) {
+  issues.push({ severity: 'high', check: 'public-home-noindex', path: 'app/layout.tsx', detail: 'root metadata must not noindex the public Support home page' })
+}
+
+// Sitemap contract: exactly the substantive public root is advertised. Auth
+// utility routes remain crawlable so Google can observe their noindex metadata,
+// but they are not sitemap inventory.
+if (!sitemap.includes("const SITE_URL = 'https://support.yousafeconsultancy.com'")) {
+  issues.push({ severity: 'high', check: 'sitemap-host', path: 'app/sitemap.ts', detail: 'Support sitemap host is missing or changed' })
+}
+if (!sitemap.includes('url: SITE_URL')) {
+  issues.push({ severity: 'high', check: 'sitemap-home-missing', path: 'app/sitemap.ts', detail: 'public Support home is missing from sitemap source' })
+}
+for (const forbidden of ['/sign-in', '/sign-up', 'lastModified: new Date()', 'checkout.yousafeconsultancy.com']) {
+  if (sitemap.includes(forbidden)) {
+    issues.push({ severity: 'high', check: 'sitemap-forbidden-entry', path: 'app/sitemap.ts', detail: `sitemap source contains ${forbidden}` })
+  }
+}
+
+// Authentication routes must explicitly noindex while remaining followable.
+for (const [route, file, source] of [
+  ['/sign-in', 'app/sign-in/layout.tsx', signIn],
+  ['/sign-up', 'app/sign-up/layout.tsx', signUp],
+]) {
+  if (!source.includes('index: false') || !source.includes('follow: true')) {
+    issues.push({ severity: 'high', check: 'auth-route-indexability', path: route, detail: `${file} must set robots index:false, follow:true` })
+  }
+}
+
+// robots.txt must advertise the Support sitemap while keeping private app/API
+// surfaces out of crawl. Do not block sign-in/sign-up: their noindex metadata
+// needs to remain observable by search engines.
+for (const needle of [
+  "sitemap: `${SITE_URL}/sitemap.xml`",
+  "'/api/'",
+  "'/admin'",
+  "'/dashboard'",
+  "'/onboarding'",
+]) {
+  if (!robots.includes(needle)) {
+    issues.push({ severity: 'high', check: 'robots-contract', path: 'app/robots.ts', detail: `missing ${needle}` })
+  }
+}
+for (const authPath of ["'/sign-in'", "'/sign-up'"]) {
+  if (robots.includes(authPath)) {
+    issues.push({ severity: 'high', check: 'robots-auth-block', path: 'app/robots.ts', detail: `${authPath} must not be disallowed because Google needs to see noindex` })
+  }
+}
+
+// Estate retirement invariant.
+for (const [file, source] of [
+  ['app/layout.tsx', layout],
+  ['app/sitemap.ts', sitemap],
+  ['app/robots.ts', robots],
+  ['app/sign-in/layout.tsx', signIn],
+  ['app/sign-up/layout.tsx', signUp],
+]) {
+  if (source.includes('checkout.yousafeconsultancy.com')) {
+    issues.push({ severity: 'high', check: 'retired-checkout-host', path: file, detail: 'retired checkout host reintroduced into active SEO source' })
+  }
+}
+
+console.log('\n🔒 Support SEO Contract Guard\n')
+if (issues.length) {
+  for (const issue of issues) {
+    console.error(`   [${issue.severity.toUpperCase()}] ${issue.check}: ${issue.path}`)
+    console.error(`          ${issue.detail}`)
+  }
+  console.error(`\n❌ SUPPORT SEO CONTRACT GUARD FAILED (${issues.length} issue${issues.length === 1 ? '' : 's'})\n`)
   process.exit(1)
 }
 
-function walkHtml(dir, files = []) {
-  if (!existsSync(dir)) return files
-  for (const entry of readdirSync(dir)) {
-    if (entry === '_next' || entry.startsWith('.')) continue
-    const full = join(dir, entry)
-    let st
-    try { st = statSync(full) } catch { continue }
-    if (st.isDirectory()) walkHtml(full, files)
-    else if (entry === 'index.html') files.push(full)
-  }
-  return files
-}
-
-function extractMeta(html) {
-  const title = (html.match(/<title[^>]*>([^<]*)/i) || [])[1]?.trim() || null
-  const robots =
-    (html.match(/name=["']robots["'][^>]*content=["']([^"']+)/i) ||
-      html.match(/content=["']([^"']+)["'][^>]*name=["']robots["']/i) ||
-      [])[1] || null
-  const ldTypes = [...html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)].map((m) => m[1])
-  return { title, robots, ldTypes: [...new Set(ldTypes)] }
-}
-
-function isNoindex(robots) {
-  return Boolean(robots && /noindex/i.test(robots))
-}
-
-function pathFromFile(file, outDir) {
-  let rel = relative(outDir, file).replace(/\\/g, '/')
-  if (rel.endsWith('/index.html')) rel = rel.slice(0, -'/index.html'.length)
-  else if (rel === 'index.html') rel = ''
-  return '/' + (rel || '')
-}
-
-const files = walkHtml(OUT)
-console.log(`\n🔒 Support SEO Audit Guard (${files.length} HTML files)\n`)
-
-const issues = []
-const sitemapPath = join(OUT, 'sitemap.xml')
-const hasSitemapXml = existsSync(sitemapPath)
-let sitemapEntryCount = 0
-
-if (hasSitemapXml) {
-  const sitemapContent = readFileSync(sitemapPath, 'utf8')
-  sitemapEntryCount = (sitemapContent.match(/<url>/g) || []).length
-  console.log(`   Sitemap entries: ${sitemapEntryCount}`)
-
-  if (sitemapEntryCount === 0) {
-    issues.push({
-      check: 'empty-sitemap',
-      severity: 'high',
-      path: '/sitemap.xml',
-      detail: 'sitemap.xml contains 0 <url> entries',
-    })
-  }
-  for (const authPath of ['/sign-in', '/sign-up']) {
-    if (sitemapContent.includes(`support.yousafeconsultancy.com${authPath}`)) {
-      issues.push({
-        check: 'auth-route-in-sitemap',
-        severity: 'high',
-        path: authPath,
-        detail: 'authentication utility route must not be advertised for indexing',
-      })
-    }
-  }
-} else {
-  issues.push({
-    check: 'missing-sitemap',
-    severity: 'high',
-    path: '/sitemap.xml',
-    detail: 'sitemap.xml not found in build output',
-  })
-}
-
-for (const file of files) {
-  const html = readFileSync(file, 'utf8')
-  const pagePath = pathFromFile(file, OUT)
-  const meta = extractMeta(html)
-  const noindex = isNoindex(meta.robots)
-
-  if (pagePath === '/' && noindex) {
-    issues.push({
-      check: 'public-home-noindex',
-      severity: 'high',
-      path: '/',
-      detail: `robots: ${meta.robots}`,
-    })
-  }
-
-  if (['/sign-in', '/sign-up'].includes(pagePath) && !noindex) {
-    issues.push({
-      check: 'auth-route-indexable',
-      severity: 'high',
-      path: pagePath,
-      detail: 'authentication utility route must emit noindex, follow',
-    })
-  }
-
-  if (pagePath === '/' && meta.ldTypes.length === 0) {
-    issues.push({
-      check: 'public-home-missing-schema',
-      severity: 'medium',
-      path: '/',
-      detail: 'no JSON-LD @type found on public home page',
-    })
-  }
-}
-
-for (const [route, file] of [
-  ['/sign-in', 'app/sign-in/layout.tsx'],
-  ['/sign-up', 'app/sign-up/layout.tsx'],
-]) {
-  const sourcePath = join(root, file)
-  const source = existsSync(sourcePath) ? readFileSync(sourcePath, 'utf8') : ''
-  if (!source.includes('index: false') || !source.includes('follow: true')) {
-    issues.push({
-      check: 'auth-route-source-noindex-missing',
-      severity: 'high',
-      path: route,
-      detail: `${file} must explicitly set robots index:false, follow:true`,
-    })
-  }
-}
-
-const summary = {
-  totalHtmlFiles: files.length,
-  sitemapEntries: sitemapEntryCount,
-  publicHomeNoindex: issues.filter((i) => i.check === 'public-home-noindex').length,
-  authIndexabilityIssues: issues.filter((i) => i.check.startsWith('auth-route')).length,
-  missingSchema: issues.filter((i) => i.check === 'public-home-missing-schema').length,
-  sitemapIssues: issues.filter((i) => i.check === 'empty-sitemap' || i.check === 'missing-sitemap').length,
-  totalIssues: issues.length,
-  criticalCount: issues.filter((i) => i.severity === 'high' || i.severity === 'critical').length,
-}
-
-const report = {
-  timestamp: new Date().toISOString(),
-  summary,
-  issues,
-}
-
-const reportPath = join(root, '.seo', 'reports', 'saas-audit-guard.json')
-mkdirSync(dirname(reportPath), { recursive: true })
-writeFileSync(reportPath, JSON.stringify(report, null, 2))
-
-console.log(`   HTML pages:      ${summary.totalHtmlFiles}`)
-console.log(`   Sitemap:         ${hasSitemapXml ? `OK (${sitemapEntryCount} entries)` : 'MISSING'}`)
-console.log(`   Auth SEO issues: ${summary.authIndexabilityIssues}`)
-console.log(`   Missing schema:  ${summary.missingSchema}`)
-console.log(`   Total issues:    ${summary.totalIssues} (${summary.criticalCount} critical)\n`)
-
-for (const issue of issues.filter((i) => i.severity !== 'low')) {
-  console.log(`   [${issue.severity.toUpperCase()}] ${issue.check}: ${issue.path}`)
-  if (issue.detail) console.log(`          ${issue.detail}`)
-}
-
-const passed = summary.criticalCount === 0
-console.log(`\n${passed ? '✅' : '❌'} SUPPORT SEO AUDIT GUARD ${passed ? 'PASSED' : 'FAILED'}`)
-console.log(`   Report: ${reportPath}\n`)
-
-process.exit(passed ? 0 : 1)
+console.log('   Public home canonical + WebSite schema: OK')
+console.log('   Sitemap inventory and retirement rules: OK')
+console.log('   Auth noindex contract: OK')
+console.log('   robots.txt private-surface contract: OK')
+console.log('\n✅ SUPPORT SEO CONTRACT GUARD PASSED\n')
