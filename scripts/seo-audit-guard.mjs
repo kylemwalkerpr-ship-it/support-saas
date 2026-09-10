@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 /**
- * seo-audit-guard.mjs — Estate SEO guard for yousafe-saas (support)
+ * seo-audit-guard.mjs — Estate SEO guard for YouSafe Support
  *
- * The support app is mostly auth-gated. Checks focus on the public routes:
- *   1. Sitemap health — sitemap.xml is non-empty and contains public routes
- *   2. Noindex conflict — no public route emits accidental noindex
- *   3. Schema presence — public pages have WebSite JSON-LD
- *
- * Exit codes:
- *   0 — passed
- *   1 — critical issues found (not used in report-only CI mode)
+ * The support app is mostly auth-gated. Checks focus on the public surface:
+ *   1. sitemap.xml exists, is non-empty, and excludes authentication routes
+ *   2. the public home page remains indexable
+ *   3. authentication routes are noindex utility surfaces
+ *   4. the public home page carries JSON-LD
  */
 
 import {
@@ -26,7 +23,6 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = dirname(__dirname)
 
-// OpenNext outputs to .vercel/output/static/; fall back to out/
 function findOutDir() {
   for (const candidate of [
     join(root, '.vercel', 'output', 'static'),
@@ -68,8 +64,7 @@ function extractMeta(html) {
 }
 
 function isNoindex(robots) {
-  if (!robots) return false
-  return /noindex/i.test(robots)
+  return Boolean(robots && /noindex/i.test(robots))
 }
 
 function pathFromFile(file, outDir) {
@@ -79,16 +74,16 @@ function pathFromFile(file, outDir) {
   return '/' + (rel || '')
 }
 
-// ── Main ──
 const files = walkHtml(OUT)
 console.log(`\n🔒 Support SEO Audit Guard (${files.length} HTML files)\n`)
 
 const issues = []
-let hasSitemapXml = existsSync(join(OUT, 'sitemap.xml'))
+const sitemapPath = join(OUT, 'sitemap.xml')
+const hasSitemapXml = existsSync(sitemapPath)
 let sitemapEntryCount = 0
 
 if (hasSitemapXml) {
-  const sitemapContent = readFileSync(join(OUT, 'sitemap.xml'), 'utf8')
+  const sitemapContent = readFileSync(sitemapPath, 'utf8')
   sitemapEntryCount = (sitemapContent.match(/<url>/g) || []).length
   console.log(`   Sitemap entries: ${sitemapEntryCount}`)
 
@@ -100,6 +95,16 @@ if (hasSitemapXml) {
       detail: 'sitemap.xml contains 0 <url> entries',
     })
   }
+  for (const authPath of ['/sign-in', '/sign-up']) {
+    if (sitemapContent.includes(`support.yousafeconsultancy.com${authPath}`)) {
+      issues.push({
+        check: 'auth-route-in-sitemap',
+        severity: 'high',
+        path: authPath,
+        detail: 'authentication utility route must not be advertised for indexing',
+      })
+    }
+  }
 } else {
   issues.push({
     check: 'missing-sitemap',
@@ -109,40 +114,62 @@ if (hasSitemapXml) {
   })
 }
 
-// Check each page
 for (const file of files) {
   const html = readFileSync(file, 'utf8')
-  const path = pathFromFile(file, OUT)
+  const pagePath = pathFromFile(file, OUT)
   const meta = extractMeta(html)
   const noindex = isNoindex(meta.robots)
 
-  // Check 1: public routes should not be noindex
-  if (noindex && ['/', '/sign-in', '/sign-up'].includes(path)) {
+  if (pagePath === '/' && noindex) {
     issues.push({
-      check: 'public-route-noindex',
+      check: 'public-home-noindex',
       severity: 'high',
-      path: path || '/',
+      path: '/',
       detail: `robots: ${meta.robots}`,
     })
   }
 
-  // Check 2: schema presence on public pages
-  if (['/', '/sign-in', '/sign-up'].includes(path) && meta.ldTypes.length === 0) {
+  if (['/sign-in', '/sign-up'].includes(pagePath) && !noindex) {
     issues.push({
-      check: 'public-route-missing-schema',
+      check: 'auth-route-indexable',
+      severity: 'high',
+      path: pagePath,
+      detail: 'authentication utility route must emit noindex, follow',
+    })
+  }
+
+  if (pagePath === '/' && meta.ldTypes.length === 0) {
+    issues.push({
+      check: 'public-home-missing-schema',
       severity: 'medium',
-      path: path || '/',
-      detail: 'no JSON-LD @type found on public page',
+      path: '/',
+      detail: 'no JSON-LD @type found on public home page',
     })
   }
 }
 
-// Aggregate
+for (const [route, file] of [
+  ['/sign-in', 'app/sign-in/layout.tsx'],
+  ['/sign-up', 'app/sign-up/layout.tsx'],
+]) {
+  const sourcePath = join(root, file)
+  const source = existsSync(sourcePath) ? readFileSync(sourcePath, 'utf8') : ''
+  if (!source.includes('index: false') || !source.includes('follow: true')) {
+    issues.push({
+      check: 'auth-route-source-noindex-missing',
+      severity: 'high',
+      path: route,
+      detail: `${file} must explicitly set robots index:false, follow:true`,
+    })
+  }
+}
+
 const summary = {
   totalHtmlFiles: files.length,
   sitemapEntries: sitemapEntryCount,
-  publicRouteNoindex: issues.filter((i) => i.check === 'public-route-noindex').length,
-  missingSchema: issues.filter((i) => i.check === 'public-route-missing-schema').length,
+  publicHomeNoindex: issues.filter((i) => i.check === 'public-home-noindex').length,
+  authIndexabilityIssues: issues.filter((i) => i.check.startsWith('auth-route')).length,
+  missingSchema: issues.filter((i) => i.check === 'public-home-missing-schema').length,
   sitemapIssues: issues.filter((i) => i.check === 'empty-sitemap' || i.check === 'missing-sitemap').length,
   totalIssues: issues.length,
   criticalCount: issues.filter((i) => i.severity === 'high' || i.severity === 'critical').length,
@@ -154,17 +181,15 @@ const report = {
   issues,
 }
 
-// Write report
 const reportPath = join(root, '.seo', 'reports', 'saas-audit-guard.json')
 mkdirSync(dirname(reportPath), { recursive: true })
 writeFileSync(reportPath, JSON.stringify(report, null, 2))
 
-// Console
-console.log(`   HTML pages:     ${summary.totalHtmlFiles}`)
-console.log(`   Sitemap:        ${hasSitemapXml ? `OK (${sitemapEntryCount} entries)` : 'MISSING'}`)
-console.log(`   Public noindex: ${summary.publicRouteNoindex}`)
-console.log(`   Missing schema: ${summary.missingSchema}`)
-console.log(`   Total issues:   ${summary.totalIssues} (${summary.criticalCount} critical)\n`)
+console.log(`   HTML pages:      ${summary.totalHtmlFiles}`)
+console.log(`   Sitemap:         ${hasSitemapXml ? `OK (${sitemapEntryCount} entries)` : 'MISSING'}`)
+console.log(`   Auth SEO issues: ${summary.authIndexabilityIssues}`)
+console.log(`   Missing schema:  ${summary.missingSchema}`)
+console.log(`   Total issues:    ${summary.totalIssues} (${summary.criticalCount} critical)\n`)
 
 for (const issue of issues.filter((i) => i.severity !== 'low')) {
   console.log(`   [${issue.severity.toUpperCase()}] ${issue.check}: ${issue.path}`)
