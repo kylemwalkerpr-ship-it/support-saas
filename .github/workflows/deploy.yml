@@ -32,10 +32,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Checkout retirement and sitemap source guards
+      - name: Checkout retirement, sitemap, and analytics source guards
         run: |
           node scripts/checkout-retirement-guard.mjs
           node scripts/verify-support-sitemap-source.mjs
+          node scripts/ga4-estate-guard.mjs
 
       - name: Verify Cloudflare credentials
         if: github.event_name != 'pull_request'
@@ -54,6 +55,7 @@ jobs:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
         run: npm run build
 
       - name: SEO audit guard
