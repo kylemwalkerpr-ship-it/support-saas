@@ -51,8 +51,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: SEO audit guard (report-only)
-        continue-on-error: true
+      - name: SEO audit guard
         run: |
           echo "::group::Support SEO Audit Guard"
           node scripts/seo-audit-guard.mjs
