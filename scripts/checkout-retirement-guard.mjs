@@ -5,14 +5,9 @@ import { join } from 'node:path'
 
 const root = process.cwd()
 const RETIRED_HOST = 'checkout.yousafeconsultancy.com'
-const files = [
-  'lib/chat/knowledge.ts',
-  'lib/chat/ai.ts',
-  'components/estate-footer-config.ts',
-]
-
 const failures = []
-for (const file of files) {
+
+for (const file of ['lib/chat/knowledge.ts', 'components/estate-footer-config.ts']) {
   const source = readFileSync(join(root, file), 'utf8')
   if (source.includes(RETIRED_HOST)) {
     failures.push(`${file} references retired host ${RETIRED_HOST}`)
@@ -20,12 +15,23 @@ for (const file of files) {
 }
 
 const ai = readFileSync(join(root, 'lib/chat/ai.ts'), 'utf8')
+const defaultSitemaps = ai.match(/const DEFAULT_SITEMAPS = \[[\s\S]*?\n\]/)?.[0] || ''
+if (defaultSitemaps.includes(RETIRED_HOST)) {
+  failures.push(`Support AI default sitemap estate includes retired host ${RETIRED_HOST}`)
+}
+if (!ai.includes(`const RETIRED_HOSTS = new Set(['${RETIRED_HOST}'])`)) {
+  failures.push('Support AI is missing the explicit retired-host denylist')
+}
+if (!ai.includes('.filter((url) => !isRetiredUrl(url))')) {
+  failures.push('Support AI configured sitemap inputs are not filtered through the retired-host denylist')
+}
+
 for (const host of [
   'uk.yousafeconsultancy.com/sitemap.xml',
   'au.yousafeconsultancy.com/sitemap.xml',
   'market.yousafeconsultancy.com/sitemap.xml',
 ]) {
-  if (!ai.includes(host)) failures.push(`Support AI sitemap estate is missing ${host}`)
+  if (!defaultSitemaps.includes(host)) failures.push(`Support AI sitemap estate is missing ${host}`)
 }
 
 const footer = readFileSync(join(root, 'components/estate-footer-config.ts'), 'utf8')
