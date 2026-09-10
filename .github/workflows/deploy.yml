@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Checkout retirement regression guard
+        run: node scripts/checkout-retirement-guard.mjs
+
       - name: Verify Cloudflare credentials
         if: github.event_name != 'pull_request'
         env:
