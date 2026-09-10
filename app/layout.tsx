@@ -25,9 +25,9 @@ export const metadata = {
   metadataBase: new URL('https://support.yousafeconsultancy.com'),
   title: 'YouSafe Support — Customer Service & Live Chat',
   description: 'Customer support inbox and live chat management for YouSafe Consultancy.',
-  // Allow public routes (/, /sign-in, /sign-up) to be indexed for branded SERP capture.
-  // Private auth-gated routes (/dashboard, /admin, /onboarding) are blocked by middleware
-  // and will never be reachable by crawlers.
+  // The public Support home page is indexable for branded discovery. Auth
+  // utility routes define their own noindex metadata; private application
+  // routes remain protected by middleware and robots rules.
   alternates: {
     canonical: '/',
   },

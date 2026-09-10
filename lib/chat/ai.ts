@@ -3,13 +3,16 @@ import { SYSTEM_KNOWLEDGE } from '@/lib/chat/knowledge'
 const FALLBACK_ANSWER =
   'I can help with Yousafe services, study pathways, document preparation, billing, portal access, and support questions. If your question depends on your personal account or case details, I can connect you with a live support agent.'
 
+const RETIRED_HOSTS = new Set(['checkout.yousafeconsultancy.com'])
+
 const DEFAULT_SITEMAPS = [
   'https://yousafeconsultancy.com/sitemap.xml',
   'https://usa.yousafeconsultancy.com/sitemap.xml',
   'https://ca.yousafeconsultancy.com/sitemap.xml',
-  'https://checkout.yousafeconsultancy.com/sitemap.xml',
+  'https://uk.yousafeconsultancy.com/sitemap.xml',
+  'https://au.yousafeconsultancy.com/sitemap.xml',
   'https://legal.yousafeconsultancy.com/sitemap.xml',
-  'https://portal.yousafeconsultancy.com/sitemap.xml',
+  'https://market.yousafeconsultancy.com/sitemap.xml',
   'https://support.yousafeconsultancy.com/sitemap.xml',
 ]
 
@@ -24,11 +27,20 @@ const CACHE_MS = 1000 * 60 * 30
 const MAX_SITEMAP_URLS = 120
 const MAX_DOCS = 80
 
+function isRetiredUrl(value: string) {
+  try {
+    return RETIRED_HOSTS.has(new URL(value).hostname)
+  } catch {
+    return true
+  }
+}
+
 function configuredSitemaps() {
   return (process.env.YOUSAFE_CHAT_SITEMAPS || DEFAULT_SITEMAPS.join(','))
     .split(',')
     .map((url) => url.trim())
     .filter(Boolean)
+    .filter((url) => !isRetiredUrl(url))
 }
 
 function stripTags(html: string) {
@@ -56,11 +68,13 @@ function parseLocs(xml: string) {
   return [...xml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/gi)]
     .map((match) => match[1].trim())
     .filter((url) => /^https?:\/\//i.test(url))
+    .filter((url) => !isRetiredUrl(url))
 }
 
 function isUsefulPage(url: string) {
   return (
     /^https?:\/\//i.test(url) &&
+    !isRetiredUrl(url) &&
     !url.includes('/api/') &&
     !url.includes('/sign-') &&
     !url.includes('/cdn-cgi/') &&
@@ -124,7 +138,7 @@ async function loadSitemapDocs() {
 
   while (queue.length && seenSitemaps.size < 12 && pageUrls.size < MAX_SITEMAP_URLS) {
     const sitemapUrl = queue.shift()
-    if (!sitemapUrl || seenSitemaps.has(sitemapUrl)) continue
+    if (!sitemapUrl || seenSitemaps.has(sitemapUrl) || isRetiredUrl(sitemapUrl)) continue
     seenSitemaps.add(sitemapUrl)
 
     const xml = await fetchText(sitemapUrl)

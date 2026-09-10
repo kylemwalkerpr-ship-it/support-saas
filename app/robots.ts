@@ -3,9 +3,9 @@ import type { MetadataRoute } from 'next'
 const SITE_URL = 'https://support.yousafeconsultancy.com'
 
 /**
- * Support is fully noindex via root layout metadata. Sitemap is empty by
- * design. Do not emit the non-standard `host:` field (estate policy
- * 2026-07-14 — caseworks/marketing apps already omit it).
+ * The public Support home page is indexable. Authentication routes emit their
+ * own noindex metadata and remain crawlable so bots can observe that directive.
+ * Private application surfaces stay disallowed.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
