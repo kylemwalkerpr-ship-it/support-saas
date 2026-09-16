@@ -56,7 +56,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
-        run: npm run build
+        run: npm run pages:build
 
       - name: SEO audit guard
         run: |
@@ -66,10 +66,48 @@ jobs:
 
       # Worker secrets (CLERK_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY, etc.)
       # live on the worker itself, set once via `wrangler versions secret put`.
-      # CI does not push them.
-      - name: Deploy via OpenNext to Cloudflare
+      # CI does not push them: a plain `wrangler deploy` preserves the
+      # dashboard-managed secrets on the existing Worker.
+      - name: Deploy via local Wrangler
         if: github.event_name != 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npm run deploy
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::Deploy attempt ${attempt} of 3"
+            if node scripts/deploy-production.mjs; then
+              echo "::endgroup::"
+              echo "Deploy attempt ${attempt} succeeded."
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Deploy attempt ${attempt} failed."
+            if [ "${attempt}" -eq 1 ]; then
+              echo "Waiting 30s before attempt 2..."
+              sleep 30
+            elif [ "${attempt}" -eq 2 ]; then
+              echo "Waiting 60s before attempt 3..."
+              sleep 60
+            fi
+          done
+          echo "Deployment failed after 3 attempts."
+          exit 1
+
+      - name: "Smoke test https://support.yousafeconsultancy.com/"
+        if: github.event_name != 'pull_request'
+        run: |
+          url="https://support.yousafeconsultancy.com/"
+          echo "Smoke testing ${url}"
+          status=$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 30 --retry 5 --retry-delay 5 --retry-all-errors "$url") || {
+            echo "Smoke request to ${url} failed before receiving an HTTP status."
+            exit 1
+          }
+          echo "Smoke HTTP status: ${status}"
+          case "${status}" in
+            2*|3*) echo "Smoke check passed." ;;
+            *)
+              echo "Smoke check failed with HTTP ${status}."
+              exit 1
+              ;;
+          esac
