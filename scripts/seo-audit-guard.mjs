@@ -28,6 +28,18 @@ const sitemap = requireFile('app/sitemap.ts')
 const robots = requireFile('app/robots.ts')
 const signIn = requireFile('app/sign-in/layout.tsx')
 const signUp = requireFile('app/sign-up/layout.tsx')
+const deployWorkflow = requireFile('.github/workflows/deploy.yml')
+const wranglerConfig = requireFile('wrangler.toml')
+
+// Clerk's browser bundle is requested from a versioned URL. Keep the build
+// substitution and deployed Worker runtime pin aligned to avoid a redirect.
+const clerkJsVersion = '6.32.0'
+if (!deployWorkflow.includes(`NEXT_PUBLIC_CLERK_JS_VERSION: '${clerkJsVersion}'`)) {
+  issues.push({ severity: 'high', check: 'clerk-js-version-pin', path: '.github/workflows/deploy.yml', detail: `Build (Next + OpenNext) must pin NEXT_PUBLIC_CLERK_JS_VERSION to ${clerkJsVersion}` })
+}
+if (!wranglerConfig.includes(`NEXT_PUBLIC_CLERK_JS_VERSION = "${clerkJsVersion}"`)) {
+  issues.push({ severity: 'high', check: 'clerk-js-version-pin', path: 'wrangler.toml', detail: `[vars] must pin NEXT_PUBLIC_CLERK_JS_VERSION to ${clerkJsVersion}` })
+}
 
 // Public home metadata contract.
 for (const needle of [
