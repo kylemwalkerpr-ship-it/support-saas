@@ -2,14 +2,36 @@ import type { MetadataRoute } from 'next'
 
 const SITE_URL = 'https://support.yousafeconsultancy.com'
 
-const PRIVATE_DISALLOW = ['/api/', '/admin', '/dashboard', '/onboarding']
+const PRIVATE_DISALLOW = [
+  '/api/',
+  '/admin',
+  '/audit',
+  '/dashboard',
+  '/disputes',
+  '/inbox',
+  '/inquiries',
+  '/macros',
+  '/metrics',
+  '/moderation',
+  '/onboarding',
+  '/orders',
+  '/settings',
+  '/users',
+  '/verifications',
+]
+
+const PUBLIC_ANSWER_CRAWLERS = [
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'PerplexityBot',
+  'Perplexity-User',
+  'Claude-User',
+]
 
 /**
- * The public Support home page is indexable. Authentication routes emit their
- * own noindex metadata and remain crawlable so bots can observe that directive.
- * Private application surfaces stay disallowed.
- * OAI-SearchBot and ChatGPT-User share the wildcard public allow and the same
- * private exclusions.
+ * The Support landing page is public and indexable. Authentication routes emit
+ * their own noindex metadata so crawlers can observe that directive. Signed-in
+ * application surfaces stay disallowed. Public Next assets remain crawlable.
  */
 export default function robots(): MetadataRoute.Robots {
   const publicRule = {
@@ -24,10 +46,10 @@ export default function robots(): MetadataRoute.Robots {
         ...publicRule,
       },
       {
-        userAgent: ['OAI-SearchBot', 'ChatGPT-User'],
+        userAgent: PUBLIC_ANSWER_CRAWLERS,
         ...publicRule,
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: SITE_URL + '/sitemap.xml',
   }
 }

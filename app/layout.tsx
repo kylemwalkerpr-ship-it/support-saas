@@ -105,7 +105,7 @@ export default async function RootLayout({
               '@graph': [
                 {
                   '@type': 'Organization',
-                  '@id': 'https://support.yousafeconsultancy.com/#organization',
+                  '@id': 'https://yousafeconsultancy.com/#organization',
                   name: 'YouSafe Consultancy',
                   url: 'https://yousafeconsultancy.com',
                 },
@@ -115,7 +115,7 @@ export default async function RootLayout({
                   name: 'YouSafe Support',
                   url: 'https://support.yousafeconsultancy.com',
                   publisher: {
-                    '@id': 'https://support.yousafeconsultancy.com/#organization',
+                    '@id': 'https://yousafeconsultancy.com/#organization',
                   },
                 },
               ],
