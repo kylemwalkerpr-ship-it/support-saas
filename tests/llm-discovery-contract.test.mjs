@@ -20,7 +20,7 @@ const AGENTS = [
 ]
 
 test('robots keeps the wildcard rule and named crawlers with the same exclusions', () => {
-  assert.match(robots, /userAgent:\s*'\*'/) 
+  assert.match(robots, /userAgent:\s*'\*'/)
   assert.match(robots, /allow:\s*'\/'/)
   for (const path of DISALLOW) assert.ok(robots.includes(path), path)
   for (const agent of AGENTS) assert.ok(robots.includes(`'${agent}'`), agent)
@@ -29,7 +29,7 @@ test('robots keeps the wildcard rule and named crawlers with the same exclusions
 })
 
 test('layout JSON-LD is an organization and support website graph', () => {
-  assert.match(layout, /'@graph'/) 
+  assert.match(layout, /'@graph'/)
   assert.ok(layout.includes('https://yousafeconsultancy.com/#organization'))
   assert.ok(layout.includes("name: 'YouSafe Consultancy'"))
   assert.ok(layout.includes("url: 'https://yousafeconsultancy.com'"))
@@ -57,7 +57,7 @@ test('llms.txt states public support scope and retired checkout', () => {
 })
 
 test('checkout retirement still points commerce at Market and away from the retired host', () => {
-  assert.match(checkout, /checkout\.yousafeconsultancy\.com/) 
+  assert.match(checkout, /checkout\.yousafeconsultancy\.com/)
   assert.match(checkout, /retired/i)
   assert.ok(checkout.includes('https://market.yousafeconsultancy.com/'))
   assert.ok(checkout.includes('https://portal.yousafeconsultancy.com/'))
