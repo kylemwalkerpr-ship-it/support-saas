@@ -15,7 +15,8 @@ const privatePaths = [
   '/orders', '/settings', '/users', '/verifications',
 ]
 const answerAgents = [
-  'OAI-SearchBot', 'ChatGPT-User', 'PerplexityBot', 'Perplexity-User', 'Claude-User',
+  'OAI-SearchBot', 'ChatGPT-User', 'GPTBot', 'PerplexityBot', 'Perplexity-User', 'Claude-User',
+  'Claude-SearchBot', 'ClaudeBot',
 ]
 
 assert.equal(robots.includes('/_next/static/'), false)
@@ -23,6 +24,7 @@ assert.ok(robots.includes("userAgent: '*'"))
 for (const agent of answerAgents) assert.ok(robots.includes("'" + agent + "'"), 'robots missing ' + agent)
 for (const path of privatePaths) assert.ok(robots.includes("'" + path + "'"), 'robots missing ' + path)
 assert.ok(robots.includes('disallow: PRIVATE_DISALLOW'))
+assert.ok(robots.includes('PUBLIC_AI_CRAWLERS'))
 
 const orgId = 'https://yousafeconsultancy.com/#organization'
 const siteId = 'https://support.yousafeconsultancy.com/#website'

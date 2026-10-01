@@ -20,12 +20,15 @@ const PRIVATE_DISALLOW = [
   '/verifications',
 ]
 
-const PUBLIC_ANSWER_CRAWLERS = [
+const PUBLIC_AI_CRAWLERS = [
   'OAI-SearchBot',
   'ChatGPT-User',
+  'GPTBot',
   'PerplexityBot',
   'Perplexity-User',
   'Claude-User',
+  'Claude-SearchBot',
+  'ClaudeBot',
 ]
 
 /**
@@ -46,7 +49,7 @@ export default function robots(): MetadataRoute.Robots {
         ...publicRule,
       },
       {
-        userAgent: PUBLIC_ANSWER_CRAWLERS,
+        userAgent: PUBLIC_AI_CRAWLERS,
         ...publicRule,
       },
     ],
