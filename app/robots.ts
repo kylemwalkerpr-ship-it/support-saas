@@ -7,12 +7,12 @@ const PUBLIC_DISALLOW = [
   '/admin',
   '/dashboard',
   '/onboarding',
-  '/_next/static/',
 ] as const
 
 const NAMED_CRAWLERS = [
   'OAI-SearchBot',
   'ChatGPT-User',
+  'GPTBot',
   'PerplexityBot',
   'Perplexity-User',
   'Claude-User',

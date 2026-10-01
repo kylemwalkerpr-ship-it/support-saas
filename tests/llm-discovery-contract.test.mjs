@@ -10,10 +10,11 @@ const checkout = readFileSync(
   'utf8',
 )
 
-const DISALLOW = ["'/api/'", "'/admin'", "'/dashboard'", "'/onboarding'", "'/_next/static/'"]
+const DISALLOW = ["'/api/'", "'/admin'", "'/dashboard'", "'/onboarding'"]
 const AGENTS = [
   'OAI-SearchBot',
   'ChatGPT-User',
+  'GPTBot',
   'PerplexityBot',
   'Perplexity-User',
   'Claude-User',
@@ -25,6 +26,7 @@ test('robots keeps the wildcard rule and named crawlers with the same exclusions
   for (const path of DISALLOW) assert.ok(robots.includes(path), path)
   for (const agent of AGENTS) assert.ok(robots.includes(`'${agent}'`), agent)
   assert.match(robots, /NAMED_CRAWLERS\.map/)
+  assert.equal(robots.includes('/_next/static/'), false, 'public Next static assets must remain crawlable')
   assert.ok(robots.includes('https://support.yousafeconsultancy.com/sitemap.xml') || robots.includes('${SITE_URL}/sitemap.xml'))
 })
 
