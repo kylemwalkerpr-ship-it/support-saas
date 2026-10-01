@@ -102,9 +102,23 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'WebSite',
-              name: 'YouSafe Support',
-              url: 'https://support.yousafeconsultancy.com',
+              '@graph': [
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://support.yousafeconsultancy.com/#organization',
+                  name: 'YouSafe Consultancy',
+                  url: 'https://yousafeconsultancy.com',
+                },
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://support.yousafeconsultancy.com/#website',
+                  name: 'YouSafe Support',
+                  url: 'https://support.yousafeconsultancy.com',
+                  publisher: {
+                    '@id': 'https://support.yousafeconsultancy.com/#organization',
+                  },
+                },
+              ],
             }),
           }}
         />
