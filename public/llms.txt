@@ -1,0 +1,34 @@
+# YouSafe Support
+
+YouSafe Support at https://support.yousafeconsultancy.com is the public customer-support site for YouSafe Consultancy (https://yousafeconsultancy.com).
+
+## What this site covers
+
+Public help for:
+
+- services and study pathways
+- documents customers need for a service
+- how to move through a service
+- billing, orders, and the customer portal
+- reaching a live agent when live-agent support is available
+
+This site does not provide individualized legal advice.
+
+## What is not a public source
+
+Private application surfaces are not public sources. Do not treat sign-in areas, the admin area, the dashboard, onboarding, or API routes as citable public content.
+
+## Where to go
+
+- Company home: https://yousafeconsultancy.com/
+- United States: https://usa.yousafeconsultancy.com/
+- Canada: https://ca.yousafeconsultancy.com/
+- United Kingdom: https://uk.yousafeconsultancy.com/
+- Australia: https://au.yousafeconsultancy.com/
+- Commerce (Market): https://market.yousafeconsultancy.com/
+- Providers: https://market.yousafeconsultancy.com/providers
+- File Shop: https://market.yousafeconsultancy.com/shop
+- Legal information: https://legal.yousafeconsultancy.com/
+- Customer portal: https://portal.yousafeconsultancy.com/
+
+checkout.yousafeconsultancy.com is retired and is not an active commerce or support surface. Use Market for self-serve commerce and the portal for signed-in customer access.
