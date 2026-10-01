@@ -1,0 +1,25 @@
+# YouSafe Support
+
+> Public landing page for YouSafe Consultancy's support operations platform. Signed-in support workspaces are private and are not public citation sources.
+
+## Public surface
+
+- [YouSafe Support](https://support.yousafeconsultancy.com/) — overview of the support operations platform, live-chat workflow, agent access, and admin controls.
+
+## Private surfaces
+
+Do not treat signed-in application routes as citable public content. Dashboard, inbox, inquiries, orders, users, admin, audit, disputes, moderation, metrics, macros, settings, verifications, onboarding, and API routes are private operational surfaces.
+
+Sign-in and sign-up are authentication utilities, not substantive reference pages.
+
+## Related public YouSafe sources
+
+- [YouSafe Consultancy](https://yousafeconsultancy.com/)
+- [YouSafe Marketplace](https://market.yousafeconsultancy.com/)
+- [USA resources](https://usa.yousafeconsultancy.com/)
+- [Canada resources](https://ca.yousafeconsultancy.com/)
+- [UK resources](https://uk.yousafeconsultancy.com/)
+- [Australia resources](https://au.yousafeconsultancy.com/)
+- [Legal and procedural guides](https://legal.yousafeconsultancy.com/)
+
+checkout.yousafeconsultancy.com is retired. Use Marketplace for public commerce.
