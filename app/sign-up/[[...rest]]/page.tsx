@@ -4,7 +4,9 @@ import { SignUp } from '@clerk/nextjs'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
-const PORTAL_SIGN_UP_URL = 'https://portal.yousafeconsultancy.com/sign-up/student'
+// Support accounts are invitation-only; anyone else gets the YouSafe sign-up
+// modal on the Market directly (portal /sign-up/* only 302s there).
+const PORTAL_SIGN_UP_URL = 'https://market.yousafeconsultancy.com/?ys_sign_up=1&intent=client'
 const appearance = {
   variables: {
     colorPrimary: '#3C3B6E',
