@@ -12,7 +12,7 @@ type Params = Promise<{ profileId: string }>
 export default async function UserDetailPage({ params }: { params: Params }) {
   const viewer = await getOrCreateProfile()
   if (!viewer || !['support', 'admin'].includes(viewer.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   const { profileId } = await params

@@ -22,7 +22,7 @@ function formatUSD(cents: number): string {
 export default async function DashboardPage() {
   const profile = await getOrCreateProfile()
   if (!profile || !['admin', 'support'].includes(profile.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   const metrics = await getHomeMetrics()

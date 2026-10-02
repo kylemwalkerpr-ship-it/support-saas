@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { Webhook } from 'svix'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
+import { webhookIdentityPatch } from '@/lib/support-profile-policy.mjs'
 
 interface ClerkUserEvent {
   type: 'user.created' | 'user.updated' | 'user.deleted'
@@ -44,71 +45,38 @@ export async function POST(req: Request) {
   const db = createSupabaseAdminClient()
   const { data } = event
 
+  // The profiles table is shared with the portal/marketplace (one Clerk
+  // instance). This webhook only syncs identity fields on rows that already
+  // exist; it never inserts a row and never writes role/status (see
+  // lib/support-profile-policy.mjs, 2026-10-01 role regression).
   if (event.type === 'user.created' || event.type === 'user.updated') {
     const primaryEmail = data.email_addresses.find(
       (e) => e.id === data.primary_email_address_id
-    )?.email_address
-
-    if (!primaryEmail) return new Response('No primary email', { status: 400 })
-
+    )?.email_address ?? null
     const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || null
-    const { data: existingByEmail } = await db
+
+    const { data: existing } = await db
       .from('profiles')
-      .select('id, clerk_user_id, role')
-      .eq('email', primaryEmail)
+      .select('id, email, full_name, avatar_url')
+      .eq('clerk_user_id', data.id)
       .maybeSingle()
 
-    if (
-      existingByEmail &&
-      existingByEmail.clerk_user_id !== data.id &&
-      !['admin', 'support'].includes(existingByEmail.role)
-    ) {
-      const { error } = await db.from('profiles').insert({
-        clerk_user_id: data.id,
-        email: primaryEmail,
-        full_name: fullName,
-        avatar_url:
-          data.image_url ||
-          `/api/avatar?seed=${encodeURIComponent(fullName || primaryEmail || data.id)}`,
-        role: 'support',
-        status: 'pending',
-      })
-
+    const patch = webhookIdentityPatch(existing, {
+      email: primaryEmail?.toLowerCase() ?? null,
+      fullName,
+      avatarUrl: data.image_url,
+    })
+    if (existing && patch) {
+      const { error } = await db.from('profiles').update(patch).eq('id', existing.id)
       if (error) {
-        console.error('[clerk-webhook] support profile insert failed', error)
-        return new Response('Unable to create support profile', { status: 500 })
+        console.error('[clerk-webhook] support profile identity sync failed', error)
+        return new Response('Unable to sync profile identity', { status: 500 })
       }
-
-      return new Response('OK', { status: 200 })
-    }
-
-    const profilePayload: Record<string, unknown> = {
-        clerk_user_id: data.id,
-        email: primaryEmail,
-        full_name: fullName,
-        avatar_url: data.image_url,
-    }
-
-    profilePayload.role = 'support'
-    if (event.type === 'user.created') profilePayload.status = 'pending'
-    profilePayload.avatar_url =
-      data.image_url ||
-      `/api/avatar?seed=${encodeURIComponent(fullName || primaryEmail || data.id)}`
-
-    const { error } = await db.from('profiles').upsert(
-      profilePayload,
-      { onConflict: 'clerk_user_id', ignoreDuplicates: false }
-    )
-
-    if (error) {
-      console.error('[clerk-webhook] support profile upsert failed', error)
-      return new Response('Unable to sync support profile', { status: 500 })
     }
   }
 
-  if (event.type === 'user.deleted') {
-    await db.from('profiles').delete().eq('clerk_user_id', data.id)
-  }
+  // user.deleted: the shared profile row (orders, wallet, ledger) is owned by
+  // the portal, which detaches it; the support site never deletes it.
 
   return new Response('OK', { status: 200 })
 }

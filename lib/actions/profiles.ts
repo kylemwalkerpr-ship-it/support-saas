@@ -3,6 +3,12 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getClerkSessionEmail, getClerkUserId } from '@/lib/auth'
 import type { Profile, Role } from '@/lib/types'
+import {
+  canRelinkByEmail,
+  identityBackfillPatch,
+  isStaffRole,
+  selfEditablePatch,
+} from '@/lib/support-profile-policy.mjs'
 
 type ClerkUserData = {
   email: string | null
@@ -14,13 +20,6 @@ function supportAvatarUrl(seed: string) {
   return `/api/avatar?seed=${encodeURIComponent(seed || 'Yousafe Support')}`
 }
 
-function supportRecoveryEmail(userId: string) {
-  return `${userId}@support.yousafe.local`
-}
-
-function isRecoveryEmail(email: string | null | undefined) {
-  return !!email && email.endsWith('@support.yousafe.local')
-}
 
 async function getClerkUserData(userId: string): Promise<ClerkUserData> {
   const secretKey = process.env.CLERK_SECRET_KEY
@@ -66,39 +65,21 @@ async function getClerkUserData(userId: string): Promise<ClerkUserData> {
   }
 }
 
-async function assertSupportProfile(
-  db: ReturnType<typeof createSupabaseAdminClient>,
-  profile: Profile
-): Promise<Profile> {
-  if (profile.role === 'admin') return profile
-  if (profile.role === 'support') return profile
-
-  const { data, error } = await db
-    .from('profiles')
-    .update({ role: 'support', status: 'pending' })
-    .eq('id', profile.id)
-    .select('*')
-    .single()
-
-  if (error) {
-    console.error('[profiles] support role assertion failed', error)
-    return profile
-  }
-
-  return (data as Profile) ?? profile
-}
-
+/**
+ * Resolve the signed-in user's profile for the support workspace.
+ *
+ * The `profiles` table is shared with the portal/marketplace, so this NEVER
+ * changes role/status and NEVER creates a row (see lib/support-profile-policy.mjs
+ * for the 2026-10-01 regression this prevents). Non-staff rows are returned
+ * untouched so the dashboard layout can send the person back to the portal.
+ * Returns null when the Clerk user has no profile yet.
+ */
 export async function getOrCreateProfile(): Promise<Profile | null> {
   const userId = await getClerkUserId()
   if (!userId) return null
 
   try {
     const db = createSupabaseAdminClient()
-    const sessionEmail = await getClerkSessionEmail()
-    const clerkData = await getClerkUserData(userId)
-    const email = clerkData.email ?? sessionEmail ?? supportRecoveryEmail(userId)
-    const fullName = clerkData.fullName ?? 'Yousafe Support'
-    const avatarUrl = clerkData.avatarUrl ?? supportAvatarUrl(fullName || email || userId)
 
     const { data: existing, error: existingError } = await db
       .from('profiles')
@@ -111,16 +92,15 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
     }
 
     if (existing) {
-      const updates: Record<string, unknown> = {}
-
-      if (clerkData.email && isRecoveryEmail(existing.email)) updates.email = clerkData.email
-      if (clerkData.fullName && !existing.full_name) updates.full_name = clerkData.fullName
-      if (clerkData.avatarUrl && !existing.avatar_url) updates.avatar_url = clerkData.avatarUrl
-      if (existing.role !== 'admin' && existing.role !== 'support') {
-        updates.role = 'support'
-        updates.status = 'pending'
-      }
-
+      // Only staff rows get identity backfills from the support site; a
+      // customer/provider row is portal-owned and is returned untouched.
+      if (!isStaffRole(existing.role)) return existing as Profile
+      const clerkData = await getClerkUserData(userId)
+      const updates = identityBackfillPatch(existing, {
+        email: clerkData.email,
+        fullName: clerkData.fullName,
+        avatarUrl: clerkData.avatarUrl ?? supportAvatarUrl(clerkData.fullName || existing.email || userId),
+      })
       if (Object.keys(updates).length > 0) {
         const { data: refreshed, error: refreshError } = await db
           .from('profiles')
@@ -128,16 +108,18 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
           .eq('id', existing.id)
           .select('*')
           .single()
-
         if (refreshError) console.error('[profiles] support profile refresh failed', refreshError)
         if (refreshed) return refreshed as Profile
       }
-
-      return assertSupportProfile(db, existing as Profile)
+      return existing as Profile
     }
 
-    if (clerkData.email || sessionEmail) {
-      const lookupEmail = clerkData.email ?? sessionEmail
+    // No row for this Clerk id: only a STAFF row may be relinked by verified
+    // email (Clerk-id rotation for an existing agent). Nothing is created.
+    const sessionEmail = await getClerkSessionEmail()
+    const clerkData = await getClerkUserData(userId)
+    const lookupEmail = clerkData.email ?? sessionEmail
+    if (lookupEmail) {
       const { data: existingByEmail, error: emailLookupError } = await db
         .from('profiles')
         .select('*')
@@ -148,57 +130,20 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
         console.error('[profiles] email lookup failed', emailLookupError)
       }
 
-      if (existingByEmail) {
-        if (
-          existingByEmail.clerk_user_id !== userId &&
-          ['admin', 'support'].includes(existingByEmail.role)
-        ) {
-          const { data: linked, error: linkError } = await db
-            .from('profiles')
-            .update({ clerk_user_id: userId })
-            .eq('id', existingByEmail.id)
-            .select('*')
-            .single()
+      if (existingByEmail && canRelinkByEmail(existingByEmail, userId)) {
+        const { data: linked, error: linkError } = await db
+          .from('profiles')
+          .update({ clerk_user_id: userId })
+          .eq('id', existingByEmail.id)
+          .select('*')
+          .single()
 
-          if (linkError) console.error('[profiles] relink by email failed', linkError)
-          if (linked) return linked as Profile
-        }
-
-        if (existingByEmail.clerk_user_id === userId) {
-          return assertSupportProfile(db, existingByEmail as Profile)
-        }
+        if (linkError) console.error('[profiles] relink by email failed', linkError)
+        if (linked) return linked as Profile
       }
-    }
-
-    const payload = {
-      clerk_user_id: userId,
-      email,
-      full_name: fullName,
-      avatar_url: avatarUrl,
-      role: 'support',
-      status: 'pending',
-    }
-
-    const { data: created, error: createError } = await db
-      .from('profiles')
-      .upsert(payload, { onConflict: 'clerk_user_id', ignoreDuplicates: false })
-      .select('*')
-      .single()
-
-    if (!createError && created) return created as Profile
-
-    console.error('[profiles] profile upsert failed', createError)
-
-    if (sessionEmail) {
-      const { data: relinked, error: relinkError } = await db
-        .from('profiles')
-        .update({ clerk_user_id: userId })
-        .eq('email', sessionEmail)
-        .select('*')
-        .maybeSingle()
-
-      if (relinkError) console.error('[profiles] final relink failed', relinkError)
-      if (relinked) return relinked as Profile
+      if (existingByEmail && existingByEmail.clerk_user_id === userId) {
+        return existingByEmail as Profile
+      }
     }
 
     return null
@@ -206,22 +151,6 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
     console.error('[profiles] getOrCreateProfile recovery failed', error)
     return null
   }
-}
-
-export async function setProfileRole(role: Role): Promise<Profile | null> {
-  const userId = await getClerkUserId()
-  if (!userId) return null
-
-  const db = createSupabaseAdminClient()
-  const status = role === 'support' ? 'pending' : 'active'
-  const { data } = await db
-    .from('profiles')
-    .update({ role, status })
-    .eq('clerk_user_id', userId)
-    .select('*')
-    .single()
-
-  return (data as Profile) ?? null
 }
 
 export async function completeSupportProfile(input: {
@@ -235,15 +164,22 @@ export async function completeSupportProfile(input: {
   if (fullName.length < 2) throw new Error('Full name is required')
 
   const db = createSupabaseAdminClient()
+  const { data: own } = await db
+    .from('profiles')
+    .select('id, role')
+    .eq('clerk_user_id', userId)
+    .maybeSingle()
+  // Support access is granted by an admin only. This form just sets the
+  // public agent identity of an existing staff row; it never assigns a role.
+  const patch = own
+    ? selfEditablePatch(own, { full_name: fullName, avatar_url: supportAvatarUrl(input.avatarSeed || fullName) })
+    : null
+  if (!own || !patch) throw new Error('Support access is granted by an administrator.')
+
   const { data } = await db
     .from('profiles')
-    .update({
-      role: 'support',
-      status: 'pending',
-      full_name: fullName,
-      avatar_url: supportAvatarUrl(input.avatarSeed || fullName),
-    })
-    .eq('clerk_user_id', userId)
+    .update(patch)
+    .eq('id', own.id)
     .select('*')
     .single()
 
@@ -269,8 +205,17 @@ export async function setSupportStatus(
   await db.from('profiles').update({ status }).eq('id', profileId)
 }
 
-export async function getPendingSupportAgents(): Promise<Profile[]> {
+async function requireAdminDb() {
+  const userId = await getClerkUserId()
+  if (!userId) return null
   const db = createSupabaseAdminClient()
+  const { data: me } = await db.from('profiles').select('role').eq('clerk_user_id', userId).maybeSingle()
+  return me?.role === 'admin' ? db : null
+}
+
+export async function getPendingSupportAgents(): Promise<Profile[]> {
+  const db = await requireAdminDb()
+  if (!db) return []
   const { data } = await db
     .from('profiles')
     .select('*')
@@ -290,10 +235,18 @@ export async function updateProfile(updates: {
   if (!userId) return null
 
   const db = createSupabaseAdminClient()
+  const { data: own } = await db
+    .from('profiles')
+    .select('id, role')
+    .eq('clerk_user_id', userId)
+    .maybeSingle()
+  const patch = own ? selfEditablePatch(own, updates) : null
+  if (!own || !patch || Object.keys(patch).length === 0) return null
+
   const { data } = await db
     .from('profiles')
-    .update(updates)
-    .eq('clerk_user_id', userId)
+    .update(patch)
+    .eq('id', own.id)
     .select('*')
     .single()
 
@@ -301,10 +254,8 @@ export async function updateProfile(updates: {
 }
 
 export async function getAllProfiles(): Promise<Profile[]> {
-  const userId = await getClerkUserId()
-  if (!userId) return []
-
-  const db = createSupabaseAdminClient()
+  const db = await requireAdminDb()
+  if (!db) return []
   const { data } = await db
     .from('profiles')
     .select('*')

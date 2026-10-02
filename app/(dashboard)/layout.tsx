@@ -27,18 +27,18 @@ export default async function DashboardLayout({
             <AlertTriangle className="h-8 w-8 text-amber-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">
-            Account Refresh Needed
+            Support Access Is By Invitation
           </h1>
           <p className="text-gray-500 leading-relaxed mb-6">
-            Your support session is active, but we could not finish refreshing
-            your support profile. Sign in again to rebuild the session cleanly.
+            This workspace is only for approved YouSafe support staff. An
+            administrator grants support access; your portal account is unchanged.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <a
-              href="/sign-in"
+              href="https://portal.yousafeconsultancy.com/dashboard"
               className="inline-flex justify-center rounded-lg bg-[#3C3B6E] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
             >
-              Sign in again
+              Open portal dashboard
             </a>
             <a
               href="mailto:support@yousafeconsultancy.com"

@@ -64,7 +64,7 @@ export default async function ConversationPage({
 }) {
   const profile = await getOrCreateProfile()
   if (!profile || !['admin', 'support'].includes(profile.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
   const { conversationId } = await params
   const sp = await searchParams

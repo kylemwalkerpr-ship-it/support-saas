@@ -5,7 +5,7 @@ import { InquiriesPanel } from '@/components/dashboard/inquiries-panel'
 export default async function InquiriesPage() {
   const profile = await getOrCreateProfile()
   if (!profile || !['admin', 'support'].includes(profile.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   return (
