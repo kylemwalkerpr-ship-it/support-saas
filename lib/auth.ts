@@ -1,40 +1,34 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
+import { verifyToken } from '@clerk/nextjs/server'
+import {
+  emailFromClaims,
+  readSessionToken,
+  verifyOptionsFromEnv,
+  verifySessionClaims,
+} from '@/lib/clerk-session.mjs'
 
-// Decodes the Clerk session JWT to extract the user ID without making
-// any network calls — compatible with Cloudflare Workers Edge runtime.
-// Security: the JWT origin is validated by Clerk's middleware; here we only
-// need the sub claim to look up the profile in Supabase.
-async function getClerkSessionPayload(): Promise<Record<string, unknown> | null> {
+// Verified Clerk session claims for server components, server actions and
+// route handlers. The `__session` JWT's signature, exp/nbf/iat and authorized
+// party are verified with Clerk's own verifier before any claim is trusted
+// (networkless with CLERK_JWT_KEY; otherwise the instance JWKS via
+// CLERK_SECRET_KEY, cached in-isolate). An unsigned/forged/expired token yields
+// null. Memoized per request so one request pays for at most one RS256 verify.
+const getVerifiedSessionClaims = cache(async (): Promise<Record<string, unknown> | null> => {
   const cookieStore = await cookies()
-  const token =
-    cookieStore.get('__session')?.value ??
-    cookieStore.get('__clerk_db_jwt')?.value
-
+  const token = readSessionToken((name) => cookieStore.get(name)?.value)
   if (!token) return null
-
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-    const pad = parts[1].length % 4
-    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '='.repeat(pad ? 4 - pad : 0)
-    return JSON.parse(atob(b64)) as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
+  return verifySessionClaims(token, {
+    verifyToken: verifyToken as unknown as (token: string, options: object) => Promise<unknown>,
+    options: verifyOptionsFromEnv(process.env as Record<string, string | undefined>),
+  })
+})
 
 export async function getClerkUserId(): Promise<string | null> {
-  const payload = await getClerkSessionPayload()
-  return typeof payload?.sub === 'string' ? payload.sub : null
+  const claims = await getVerifiedSessionClaims()
+  return typeof claims?.sub === 'string' ? claims.sub : null
 }
 
 export async function getClerkSessionEmail(): Promise<string | null> {
-  const payload = await getClerkSessionPayload()
-  const email =
-    payload?.email ??
-    payload?.primary_email ??
-    payload?.email_address ??
-    payload?.['https://clerk.com/email']
-
-  return typeof email === 'string' && email.includes('@') ? email.toLowerCase() : null
+  return emailFromClaims(await getVerifiedSessionClaims())
 }
