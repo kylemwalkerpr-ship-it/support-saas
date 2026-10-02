@@ -38,7 +38,7 @@ export default async function DisputesQueuePage({
 }) {
   const profile = await getOrCreateProfile()
   if (!profile || !['support', 'admin'].includes(profile.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   const sp = await searchParams

@@ -14,7 +14,7 @@ type Params = Promise<{ disputeId: string }>
 export default async function DisputeTriagePage({ params }: { params: Params }) {
   const viewer = await getOrCreateProfile()
   if (!viewer || !['support', 'admin'].includes(viewer.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   const { disputeId } = await params

@@ -7,7 +7,7 @@ import { Mail } from 'lucide-react'
 export default async function AdminChatConsolePage() {
   const profile = await getOrCreateProfile()
   if (!profile || !['admin', 'support'].includes(profile.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   if (profile.role === 'support') {

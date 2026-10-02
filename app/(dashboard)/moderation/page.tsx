@@ -56,7 +56,7 @@ function pickCategories(
 
 export default async function ModerationQueuePage({ searchParams }: PageProps) {
   const profile = await getOrCreateProfile()
-  if (!profile) redirect('/sign-in')
+  if (!profile) redirect('/no-access')
   if (profile.role !== 'support' && profile.role !== 'admin') redirect('/dashboard')
 
   const params = await searchParams

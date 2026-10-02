@@ -26,7 +26,7 @@ export default async function VerificationReviewPage({
 }) {
   const viewer = await getOrCreateProfile()
   if (!viewer || !['support', 'admin'].includes(viewer.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   const { applicationId } = await params

@@ -22,7 +22,7 @@ function formatUSD(dollars: number | null): string {
 export default async function OrderDetailPage({ params }: { params: Params }) {
   const viewer = await getOrCreateProfile()
   if (!viewer || !['support', 'admin'].includes(viewer.role)) {
-    redirect('/sign-in')
+    redirect('/no-access')
   }
 
   const { orderId } = await params
