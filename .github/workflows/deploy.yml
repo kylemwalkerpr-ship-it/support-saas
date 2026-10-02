@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: Unit and contract tests
-        run: node --test tests/
+        run: node --test tests/*.test.mjs
 
       - name: Checkout retirement, sitemap, and analytics source guards
         run: |
