@@ -80,6 +80,15 @@ export function CustomerChatWidget() {
     return 'AI support online'
   }, [agentName, conversation, queue])
 
+  // Lets other fixed controls (the "Cookie settings" pill) step aside on small
+  // screens while the panel is open; see app/globals.css.
+  const panelOpen = open && !hiddenOnStaffBoard
+  useEffect(() => {
+    const root = document.documentElement
+    root.toggleAttribute('data-support-chat-open', panelOpen)
+    return () => root.removeAttribute('data-support-chat-open')
+  }, [panelOpen])
+
   useEffect(() => {
     const stored = readStoredChat()
     if (!stored) {
