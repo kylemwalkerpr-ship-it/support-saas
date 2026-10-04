@@ -14,7 +14,7 @@ export default function LandingPage() {
             <span className="text-lg font-bold" style={{ color: '#1F2937' }}>
               YouSafe <span style={{ color: '#3C3B6E' }}>Consultancy</span>
             </span>
-            <span className="text-xs font-semibold" style={{ color: '#0E7C66' }}>
+            <span className="text-xs font-semibold" style={{ color: '#0A5A4A' }}>
               Your Safe Path to Success.
             </span>
           </span>
@@ -78,7 +78,7 @@ export default function LandingPage() {
           <h2 className="text-center text-3xl font-bold mb-4" style={{ color: '#1F2937' }}>
             Built for support teams
           </h2>
-          <p className="text-center mb-16 max-w-xl mx-auto" style={{ color: '#6B7280' }}>
+          <p className="text-center mb-16 max-w-xl mx-auto" style={{ color: '#4B5563' }}>
             A focused workspace for live chat operations and support access control.
           </p>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -119,7 +119,7 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold mb-3" style={{ color: '#1F2937' }}>
                   {f.title}
                 </h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#6B7280' }}>
+                <p className="text-sm leading-relaxed" style={{ color: '#4B5563' }}>
                   {f.description}
                 </p>
               </div>
