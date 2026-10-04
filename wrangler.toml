@@ -1,5 +1,7 @@
 name = "support-saas"
-main = ".open-next/worker.js"
+main = "edge-worker.mjs"
+# edge-worker.mjs wraps the generated .open-next/worker.js (rate limiting +
+# public error redaction, see lib/edgeGuard.mjs).
 compatibility_date = "2026-05-12"
 compatibility_flags = ["nodejs_compat"]
 
@@ -15,6 +17,23 @@ command = "npx opennextjs-cloudflare build --openNextConfigPath open-next.cloudf
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+# Rate limiting (Sanitization Brief Phase 5): native Workers Rate Limiting,
+# enforced in lib/edgeGuard.mjs, keyed `<bucket>:<client IP>` per location.
+[[ratelimits]]
+name = "RL_WIDGET"
+namespace_id = "73301"
+simple = { limit = 15, period = 60 }
+
+[[ratelimits]]
+name = "RL_TRANSLATE"
+namespace_id = "73302"
+simple = { limit = 600, period = 60 }
+
+[[ratelimits]]
+name = "RL_STAFF"
+namespace_id = "73303"
+simple = { limit = 120, period = 60 }
 
 [vars]
 CLERK_AUTHORIZED_PARTIES = "https://support.yousafeconsultancy.com"

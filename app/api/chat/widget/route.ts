@@ -8,7 +8,9 @@ import {
 } from '@/lib/chat/knowledge'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  // Phase 5 CORS: the widget is served same-origin; never a wildcard.
+  'Access-Control-Allow-Origin': 'https://support.yousafeconsultancy.com',
+  Vary: 'Origin',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
