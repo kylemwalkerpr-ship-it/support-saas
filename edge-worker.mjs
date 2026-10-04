@@ -3,7 +3,7 @@
 // endpoints and redaction of internal diagnostics from /api error bodies.
 // See lib/edgeGuard.mjs. `.open-next/worker.js` is produced by the build.
 import openNextWorker from './.open-next/worker.js'
-import { rateLimitRequest, redactErrorResponse } from './lib/edgeGuard.mjs'
+import { ensureBaselineHeaders, rateLimitRequest, redactErrorResponse } from './lib/edgeGuard.mjs'
 
 export * from './.open-next/worker.js'
 
@@ -11,10 +11,10 @@ export default {
   ...openNextWorker,
   async fetch(request, env, ctx) {
     const limited = await rateLimitRequest(request, env)
-    if (limited) return limited
+    if (limited) return ensureBaselineHeaders(limited)
     const response = await openNextWorker.fetch(request, env, ctx)
     try {
-      return await redactErrorResponse(request, response)
+      return ensureBaselineHeaders(await redactErrorResponse(request, response))
     } catch {
       return response
     }

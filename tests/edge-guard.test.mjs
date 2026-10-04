@@ -43,3 +43,15 @@ test('wiring: wrangler main is the guarded entry with bindings; CSP + poweredByH
     assert.ok(!readFileSync(new URL(f, import.meta.url), 'utf8').includes("'Access-Control-Allow-Origin': '*'"))
   }
 })
+
+test('Phase 5: redirects lacking HSTS gain the transport baseline', async () => {
+  const { ensureBaselineHeaders } = await import('../lib/edgeGuard.mjs')
+  const r = ensureBaselineHeaders(new Response(null, { status: 307, headers: { Location: '/sign-in' } }))
+  assert.equal(r.status, 307)
+  assert.equal(r.headers.get('location'), '/sign-in')
+  assert.match(r.headers.get('strict-transport-security'), /max-age=31536000/)
+  assert.equal(r.headers.get('x-content-type-options'), 'nosniff')
+  const keep = new Response('x', { headers: { 'Strict-Transport-Security': 'max-age=1' } })
+  assert.equal(ensureBaselineHeaders(keep), keep)
+  assert.match(readFileSync(new URL('../edge-worker.mjs', import.meta.url), 'utf8'), /ensureBaselineHeaders\(await redactErrorResponse/)
+})
