@@ -27,6 +27,19 @@ for (const marker of required) {
   if (!source.includes(marker)) failures.push(`missing GA4 estate marker: ${marker}`)
 }
 
+// Consent gate: gtag.js must never be loaded unconditionally from the layout.
+// It is requested by components/analytics-consent.tsx after an explicit accept.
+if (/<Script[^>]*googletagmanager/.test(source) || /strategy="afterInteractive"[^]*gtag\('config'/.test(source)) {
+  failures.push('gtag.js must not load unconditionally in app/layout.tsx; route it through AnalyticsConsent')
+}
+if (!source.includes('<AnalyticsConsent')) {
+  failures.push('Support layout must render <AnalyticsConsent> so GA4 is consent-gated')
+}
+const consentSource = readFileSync(join(root, 'components', 'analytics-consent.tsx'), 'utf8')
+for (const marker of ['yousafe-analytics-consent', "'accepted'", "'rejected'", 'Domain=.yousafeconsultancy.com']) {
+  if (!consentSource.includes(marker)) failures.push(`analytics-consent.tsx missing shared consent marker: ${marker}`)
+}
+
 if (source.includes('checkout.yousafeconsultancy.com')) {
   failures.push('retired checkout host must not be present in Support GA4 wiring')
 }
@@ -41,4 +54,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('Support GA4 estate guard passed: shared property/linker wiring is present and checkout is absent.')
+console.log('Support GA4 estate guard passed: shared property/linker wiring is present, GA4 is consent-gated, and checkout is absent.')

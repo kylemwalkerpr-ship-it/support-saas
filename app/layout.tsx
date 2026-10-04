@@ -2,7 +2,7 @@ import './globals.css'
 import './portal-themes.css'
 import type { Viewport } from 'next'
 import { headers } from 'next/headers'
-import Script from 'next/script'
+import { AnalyticsConsent } from '@/components/analytics-consent'
 import { ClerkProvider } from '@clerk/nextjs'
 import { CustomerChatWidget } from '@/components/chat/customer-chat-widget'
 import { TranslationProvider } from '@/components/translation-provider'
@@ -12,6 +12,9 @@ const clerkPublishableKey =
   'pk_live_Y2xlcmsucG9ydGFsLnlvdXNhZmVjb25zdWx0YW5jeS5jb20k'
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || 'G-FTKZCVNW4B'
+// gtag.js is NOT loaded here. AnalyticsConsent requests it from this URL only
+// after the visitor accepts optional analytics (shared estate consent cookie).
+const GA_SRC = 'https://www.googletagmanager.com/gtag/js?id='
 const GA_LINKER_DOMAINS = [
   'yousafeconsultancy.com',
   'usa.yousafeconsultancy.com',
@@ -75,28 +78,11 @@ export default async function RootLayout({
 }) {
   const h = await headers()
   const lang = h.get('x-lang') || 'en'
-  const gaLinkerDomains = JSON.stringify(GA_LINKER_DOMAINS)
+  const gaLinker = { domains: [...GA_LINKER_DOMAINS], accept_incoming: true }
 
   return (
     <html lang={lang}>
       <head>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}', {
-              linker: {
-                domains: ${gaLinkerDomains},
-                accept_incoming: true
-              }
-            });
-          `}
-        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -131,9 +117,12 @@ export default async function RootLayout({
           signUpUrl="/sign-up"
         >
           <TranslationProvider>
-            {children}
+            <div id="main" tabIndex={-1} style={{ outline: 'none' }}>
+              {children}
+            </div>
             <CustomerChatWidget />
           </TranslationProvider>
+          <AnalyticsConsent measurementId={GA_MEASUREMENT_ID} gaSrc={GA_SRC} linker={gaLinker} />
         </ClerkProvider>
       </body>
     </html>
