@@ -66,3 +66,14 @@ html, body {
   background-color: #E8E8E8;
   color: #1F2937;
 }
+
+/* Floating controls: while the chat panel is open on a small screen it spans
+   the full width, so the bottom-left "Cookie settings" pill would sit on top of
+   the message box. Hide the pill until the panel closes (positioning only; the
+   consent component itself is untouched). tests/language-picker-layout.test.mjs */
+@media (max-width: 639px) {
+  html[data-support-chat-open] button[aria-label="Cookie settings"],
+  html[data-support-chat-open] [data-cookie-settings] {
+    display: none !important;
+  }
+}

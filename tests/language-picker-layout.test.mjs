@@ -25,3 +25,27 @@ test('language picker is stacked above the chat launcher, below the open chat pa
   assert.doesNotMatch(picker, /\bleft-/, 'bottom-left belongs to the Cookie settings pill')
   assert.match(widget, /fixed bottom-5 right-5 z-50 flex h-\[620px\]/)
 })
+
+test('small screens: picker collapses to a 40px globe button in the launcher column, select still tappable', () => {
+  const file = src('../components/language-selector.tsx')
+  const picker = file.match(/className="(fixed [^"]+)"/)[1]
+  for (const c of ['max-sm:h-10', 'max-sm:w-10', 'max-sm:rounded-full', 'max-sm:p-0', 'max-sm:right-7']) assert.ok(picker.split(/\s+/).includes(c), c)
+  const select = file.match(/<select\s+className="([^"]+)"/)[1]
+  for (const c of ['max-sm:absolute', 'max-sm:inset-0', 'max-sm:opacity-0']) assert.ok(select.split(/\s+/).includes(c), c)
+  assert.match(file, /aria-label="Language"/, 'icon-only control keeps an accessible name')
+})
+
+test('small screens: Cookie settings pill steps aside while the chat panel is open', () => {
+  const widget = src('../components/chat/customer-chat-widget.tsx')
+  assert.match(widget, /toggleAttribute\('data-support-chat-open', panelOpen\)/)
+  assert.match(widget, /removeAttribute\('data-support-chat-open'\)/, 'cleared on close/unmount')
+  const css = src('../app/globals.css')
+  const block = css.match(/@media \(max-width: 639px\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+  assert.match(block, /html\[data-support-chat-open\] button\[aria-label="Cookie settings"\]/)
+  assert.match(block, /display: none !important/)
+  // If the consent component still renders the pill, the selector must match it.
+  const consent = src('../components/analytics-consent.tsx')
+  if (/Cookie settings/.test(consent) && !/data-cookie-settings/.test(consent)) {
+    assert.match(consent, /aria-label="Cookie settings"/)
+  }
+})
