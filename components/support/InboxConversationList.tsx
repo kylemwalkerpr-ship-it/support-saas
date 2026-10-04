@@ -82,6 +82,17 @@ export function InboxConversationList({
     setCursor(initialNextCursor)
   }, [initialRows, initialNextCursor])
 
+  // Polling fallback: chat tables are server-only (service role), so the
+  // anon realtime channel below may deliver no events. Re-run the server
+  // component every 15s while the tab is visible so the list stays fresh.
+  React.useEffect(() => {
+    const id = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      router.refresh()
+    }, 15_000)
+    return () => window.clearInterval(id)
+  }, [router])
+
   React.useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null
     try {
