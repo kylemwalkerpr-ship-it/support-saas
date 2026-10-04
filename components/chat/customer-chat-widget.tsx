@@ -12,6 +12,35 @@ import AutoGrowInput from '@/components/messaging/AutoGrowInput'
 import { dateLabel, sameDay } from '@/lib/messaging/format'
 
 const STORAGE_KEY = 'yousafe_chat_conversation_id'
+// Per-conversation secret issued by POST /api/chat/widget. Without it the
+// server will not return or extend the conversation (see lib/chat/widgetAuth.mjs).
+const TOKEN_STORAGE_KEY = 'yousafe_chat_visitor_token'
+
+function readStoredChat() {
+  try {
+    const id = localStorage.getItem(STORAGE_KEY)
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+    return id && token ? { id, token } : null
+  } catch {
+    return null
+  }
+}
+
+function clearStoredChat() {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+  } catch {}
+}
+
+function tokenHeaders(): Record<string, string> {
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+    return token ? { 'X-Chat-Token': token } : {}
+  } catch {
+    return {}
+  }
+}
 
 function metadataString(
   metadata: Record<string, unknown> | null | undefined,
@@ -52,26 +81,48 @@ export function CustomerChatWidget() {
   }, [agentName, conversation, queue])
 
   useEffect(() => {
-    const id = localStorage.getItem(STORAGE_KEY)
-    if (!id) return
-    fetch(`/api/chat/widget/${id}`)
-      .then((r) => r.json())
+    const stored = readStoredChat()
+    if (!stored) {
+      // A conversation id saved before visitor tokens existed can no longer be
+      // reopened; drop it so the next message starts a fresh chat.
+      clearStoredChat()
+      return
+    }
+    fetch(`/api/chat/widget/${encodeURIComponent(stored.id)}`, { headers: { 'X-Chat-Token': stored.token } })
+      .then((r) => {
+        if (r.status === 401 || r.status === 404) {
+          clearStoredChat()
+          return null
+        }
+        return r.ok ? r.json() : null
+      })
       .then((data) => {
-        if (data.conversation) {
+        if (data?.conversation) {
           setConversation(data.conversation)
           setMessages(data.messages ?? [])
           setQueue(data.queue ?? { position: 0, estimatedWaitMinutes: 0 })
         }
       })
-      .catch(() => localStorage.removeItem(STORAGE_KEY))
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
     if (!conversation?.id) return
     const timer = window.setInterval(() => {
-      fetch(`/api/chat/widget/${conversation.id}`)
-        .then((r) => r.json())
+      fetch(`/api/chat/widget/${encodeURIComponent(conversation.id)}`, { headers: tokenHeaders() })
+        .then((r) => {
+          if (r.status === 401 || r.status === 404) {
+            // Token lost or conversation gone: fall back to a fresh chat.
+            clearStoredChat()
+            setConversation(null)
+            setMessages([])
+            setQueue({ position: 0, estimatedWaitMinutes: 0 })
+            return null
+          }
+          return r.ok ? r.json() : null
+        })
         .then((data) => {
+          if (!data?.conversation) return
           setConversation(data.conversation)
           setMessages(data.messages ?? [])
           setQueue(data.queue ?? { position: 0, estimatedWaitMinutes: 0 })
@@ -90,7 +141,7 @@ export function CustomerChatWidget() {
     try {
       const response = await fetch('/api/chat/widget', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...tokenHeaders() },
         body: JSON.stringify({
           conversationId: conversation?.id,
           message,
@@ -102,6 +153,11 @@ export function CustomerChatWidget() {
         throw new Error(data?.error || 'Unable to send your message right now.')
       }
       if (data.conversation?.id) {
+        // A new conversation (first message, or the old one was closed or not
+        // ours any more) comes with its own visitor token.
+        if (typeof data.visitorToken === 'string') {
+          localStorage.setItem(TOKEN_STORAGE_KEY, data.visitorToken)
+        }
         localStorage.setItem(STORAGE_KEY, data.conversation.id)
         setConversation(data.conversation)
         setMessages(data.messages ?? [])
@@ -115,7 +171,7 @@ export function CustomerChatWidget() {
   }
 
   function startNewConversation() {
-    localStorage.removeItem(STORAGE_KEY)
+    clearStoredChat()
     setConversation(null)
     setMessages([])
     setQueue({ position: 0, estimatedWaitMinutes: 0 })

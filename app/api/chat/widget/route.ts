@@ -6,20 +6,24 @@ import {
   estimateWaitMinutes,
   shouldEscalateToLiveAgent,
 } from '@/lib/chat/knowledge'
+import {
+  authorizeConversation,
+  corsHeadersFor,
+  generateVisitorToken,
+  hashVisitorToken,
+  loadWidgetPayload,
+  readVisitorToken,
+} from '@/lib/chat/widgetAuth.mjs'
 
-const corsHeaders = {
-  // Phase 5 CORS: the widget is served same-origin; never a wildcard.
-  'Access-Control-Allow-Origin': 'https://support.yousafeconsultancy.com',
-  Vary: 'Origin',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-}
+// Phase 5 CORS: YouSafe origins only (see lib/chat/widgetAuth.mjs); never a wildcard.
+const METHODS = 'GET, POST, OPTIONS'
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders })
+export async function OPTIONS(request: Request) {
+  return new Response(null, { status: 204, headers: corsHeadersFor(request, METHODS) })
 }
 
 export async function POST(request: NextRequest) {
+  const corsHeaders = { ...corsHeadersFor(request, METHODS), 'Cache-Control': 'no-store' }
   try {
     const body = await request.json()
     const message = String(body.message || '').trim()
@@ -29,22 +33,26 @@ export async function POST(request: NextRequest) {
     let conversationId = body.conversationId as string | undefined
     let existingStatus: string | null = null
 
+    // A visitor may only continue a conversation they hold the token for
+    // (X-Chat-Token). Unknown id, wrong/missing token, a pre-token legacy
+    // conversation, or a closed one: start a fresh conversation instead of
+    // writing into (or echoing back) someone else's transcript.
+    let restarted = false
     if (conversationId) {
-      const { data: existingConversation } = await db
-        .from('chat_conversations')
-        .select('status')
-        .eq('id', conversationId)
-        .maybeSingle()
-
-      existingStatus = existingConversation?.status ?? null
+      const existingConversation = await authorizeConversation(db, conversationId, readVisitorToken(request))
+      existingStatus = (existingConversation?.status as string | undefined) ?? null
       if (!existingConversation || ['resolved', 'closed'].includes(existingStatus ?? '')) {
+        restarted = true
         conversationId = undefined
         existingStatus = null
       }
     }
 
+    // Raw token is returned once, to the creator only; just its hash is stored.
+    let visitorToken: string | undefined
     if (!conversationId) {
       const nowIso = new Date().toISOString()
+      visitorToken = generateVisitorToken()
       const { data: conversation, error } = await db
         .from('chat_conversations')
         .insert({
@@ -57,8 +65,9 @@ export async function POST(request: NextRequest) {
           // Phase 5 inbox SLA columns.
           last_customer_message_at: nowIso,
           inbox_status: 'open',
+          visitor_token_hash: await hashVisitorToken(visitorToken),
         })
-        .select('*')
+        .select('id, status')
         .single()
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
@@ -103,8 +112,8 @@ export async function POST(request: NextRequest) {
       if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500, headers: corsHeaders })
       if (nextStatus === 'waiting_for_agent') await notifySupport(conversationId, message)
 
-      const result = await loadConversation(conversationId)
-      return NextResponse.json(result, { headers: corsHeaders })
+      const result = await loadWidgetPayload(db, conversationId, estimateWaitMinutes)
+      return NextResponse.json({ ...result, ...(visitorToken ? { visitorToken, restarted } : {}) }, { headers: corsHeaders })
     }
 
     const { data: history } = await db
@@ -177,8 +186,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await loadConversation(conversationId)
-    return NextResponse.json(result, { headers: corsHeaders })
+    const result = await loadWidgetPayload(db, conversationId, estimateWaitMinutes)
+    return NextResponse.json({ ...result, ...(visitorToken ? { visitorToken, restarted } : {}) }, { headers: corsHeaders })
   } catch (error) {
     console.error('[chat/widget] failed', error)
     return NextResponse.json(
@@ -199,30 +208,4 @@ async function notifySupport(conversationId: string, message: string) {
     }))
   )
   if (error) console.error('[chat/widget] support notification failed', error)
-}
-
-async function loadConversation(conversationId: string) {
-  const db = createSupabaseAdminClient()
-  const [{ data: conversation }, { data: messages }, { count }] = await Promise.all([
-    db.from('chat_conversations').select('*').eq('id', conversationId).single(),
-    db
-      .from('chat_messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true }),
-    db
-      .from('chat_conversations')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'waiting_for_agent'),
-  ])
-
-  const queuePosition = conversation?.status === 'waiting_for_agent' ? count || 1 : 0
-  return {
-    conversation,
-    messages: messages ?? [],
-    queue: {
-      position: queuePosition,
-      estimatedWaitMinutes: queuePosition ? estimateWaitMinutes(queuePosition, 0) : 0,
-    },
-  }
 }
