@@ -11,6 +11,8 @@
  */
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { footerLinkStyle, useFooterSlot } from './useFooterSlot'
 
 const CONSENT_COOKIE = 'yousafe-analytics-consent'
 const CONSENT_MAX_AGE = 15552000
@@ -75,6 +77,7 @@ export function AnalyticsConsent({
   const [choice, setChoice] = useState<Choice>(null)
   const [ready, setReady] = useState(false)
   const [open, setOpen] = useState(false)
+  const footerSlot = useFooterSlot()
 
   useEffect(() => {
     const stored = readConsent()
@@ -97,11 +100,22 @@ export function AnalyticsConsent({
   if (!ready) return null
 
   if (choice && !open) {
+    // Narrow screens: a footer link, never a pill floating over the hero.
+    if (footerSlot === undefined) return null
+    if (footerSlot) {
+      return createPortal(
+        <button type="button" onClick={() => setOpen(true)} aria-label="Cookie settings" data-cookie-settings="" style={footerLinkStyle}>
+          Cookie settings
+        </button>,
+        footerSlot,
+      )
+    }
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Cookie settings"
+        data-cookie-settings=""
         style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 9990, borderRadius: 9999, padding: '8px 14px', border: '1px solid #64748b', background: '#fff', color: '#0f172a', fontSize: 13, minHeight: 36 }}
       >
         Cookie settings
