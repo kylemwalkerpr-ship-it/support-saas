@@ -7,9 +7,14 @@ export function LanguageSelector() {
   const { language, setLanguage } = useLanguage()
 
   return (
+    // Sits in the bottom-right corner, stacked ABOVE the chat launcher
+    // (customer-chat-widget: bottom-5 right-5, 56px tall => top edge at 76px),
+    // so the two never overlap at any width. Bottom-left is taken by the
+    // "Cookie settings" pill (analytics-consent.tsx). z-40 keeps the open chat
+    // panel (z-50) above the picker. tests/language-picker-layout.test.mjs.
     <label
       data-no-translate
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-md border border-border bg-background/95 px-3 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur"
+      className="fixed bottom-[5.5rem] right-5 z-40 flex items-center gap-2 rounded-md border border-border bg-background/95 px-3 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur"
     >
       <Globe className="h-4 w-4" aria-hidden="true" />
       <span className="sr-only">Language</span>
