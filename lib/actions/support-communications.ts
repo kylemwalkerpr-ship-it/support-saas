@@ -9,6 +9,7 @@ import { SupportActionError } from '@/lib/errors'
 import { addUserNote } from '@/lib/actions/support-users'
 import { getMacroById, renderMacroBody } from '@/lib/actions/support-macros'
 import { sendSupportEmail } from '@/lib/email'
+import { renderEmailLayout } from '@/lib/emailLayout'
 import type { Profile, SupportAuditLogEntry } from '@/lib/types'
 
 // ============================================================
@@ -143,7 +144,11 @@ export async function sendUserEmail(
   const subject = (subjectRaw || SUBJECT_DEFAULT).slice(0, SUBJECT_MAX)
   const replyTo = input.overrides?.replyTo?.trim() || undefined
 
-  const html = plainToHtml(renderedBody)
+  const html = renderEmailLayout({
+    preheader: subject,
+    bodyHtml: plainToHtml(renderedBody),
+    signer: actor.full_name?.trim() || 'YouSafe Support',
+  })
 
   const sent = await sendSupportEmail({
     to: target.email,
