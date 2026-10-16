@@ -7,6 +7,7 @@ import {
 } from '@/lib/actions/support-audit'
 import { SupportActionError } from '@/lib/errors'
 import { sendSupportEmail } from '@/lib/email'
+import { renderEmailLayout } from '@/lib/emailLayout'
 import type { Profile } from '@/lib/types'
 
 // ============================================================
@@ -875,6 +876,14 @@ function escapeHtml(input: string): string {
     .replace(/'/g, '&#39;')
 }
 
+function v11(
+  preheader: string,
+  cta: { label: string; href: string } | undefined,
+  bodyHtml: string
+): string {
+  return renderEmailLayout({ preheader, cta, bodyHtml, signer: 'YouSafe Support' })
+}
+
 function renderVerificationEmail(
   action: VerificationAction,
   type: VerificationType,
@@ -890,38 +899,35 @@ function renderVerificationEmail(
   if (action === 'approve') {
     return {
       subject: 'Your application is approved',
-      html: [
+      html: v11('Your application is approved', { label: 'Open your dashboard', href: PORTAL_URL }, [
         `<p>Hi ${safeName},</p>`,
         `<p>Good news — your ${escapeHtml(typeLabel)} application has been approved.`,
         ` You can sign in to your dashboard to finish setup:</p>`,
         `<p><a href="${escapeHtml(PORTAL_URL)}">${escapeHtml(PORTAL_URL)}</a></p>`,
         `<p>Welcome to YouSafe.</p>`,
-        `<p>— YouSafe Support</p>`,
-      ].join('\n'),
+      ].join('\n')),
     }
   }
   if (action === 'request_changes') {
     return {
       subject: 'Action needed on your application',
-      html: [
+      html: v11('Action needed on your application', { label: 'Update your application', href: PORTAL_URL }, [
         `<p>Hi ${safeName},</p>`,
         `<p>We reviewed your ${escapeHtml(typeLabel)} application and need a few changes before we can move forward. Notes from the reviewer:</p>`,
         `<blockquote style="border-left:3px solid #d1d5db;padding:0 12px;color:#374151;">${safeNotes.replace(/\n/g, '<br />')}</blockquote>`,
         `<p>You can update your application here: <a href="${escapeHtml(PORTAL_URL)}">${escapeHtml(PORTAL_URL)}</a></p>`,
-        `<p>— YouSafe Support</p>`,
-      ].join('\n'),
+      ].join('\n')),
     }
   }
   // reject
   return {
     subject: 'Application update',
-    html: [
+    html: v11('Application update', undefined, [
       `<p>Hi ${safeName},</p>`,
       `<p>Thanks for applying to YouSafe. After review we&apos;re not able to move your ${escapeHtml(typeLabel)} application forward at this time. Notes from the reviewer:</p>`,
       `<blockquote style="border-left:3px solid #d1d5db;padding:0 12px;color:#374151;">${safeNotes.replace(/\n/g, '<br />')}</blockquote>`,
       `<p>If your circumstances change you&apos;re welcome to reapply.</p>`,
-      `<p>— YouSafe Support</p>`,
-    ].join('\n'),
+    ].join('\n')),
   }
 }
 
