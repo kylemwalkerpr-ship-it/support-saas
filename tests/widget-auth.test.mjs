@@ -167,7 +167,7 @@ test('wiring: both widget routes enforce the token; the widget sends it', () => 
   assert.match(get, /readVisitorToken\(request\)/)
   assert.doesNotMatch(get, /from\('chat_messages'\)/, 'GET must not read messages outside handleWidgetGet')
   const post = src('../app/api/chat/widget/route.ts')
-  assert.match(post, /authorizeConversation\(db, conversationId, readVisitorToken\(request\)\)/)
+  assert.match(post, /resolveWidgetPostTarget\(db, conversationId, readVisitorToken\(request\)\)/)
   assert.match(post, /visitor_token_hash: await hashVisitorToken\(visitorToken\)/)
   assert.doesNotMatch(post, /\.eq\('id', conversationId\)\s*\.maybeSingle\(\)/, 'no unauthenticated conversation lookup')
   const widget = src('../components/chat/customer-chat-widget.tsx')

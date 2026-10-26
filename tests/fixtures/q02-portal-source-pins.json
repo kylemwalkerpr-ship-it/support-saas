@@ -1,0 +1,19 @@
+{
+  "portal_branch_base": "8502d624b5a6e5d94e4e06d726d82b700eb32ab4",
+  "reciprocal_route_sha256": "0f4b7497b1831d6d15645cb80c0c2be5cc6ac1c94d99b5e3e20baac9950823ea",
+  "runtime_files": {
+    "attestation": "eb9ed54ff3387173b23370a0a3356a0b828ef836fd77a69c4900b285b035dbb2",
+    "checkpoint": "323a0eee1616cc0c40caf1de7f383a22c04b4b7baba91a01de1e74945bdece4e",
+    "checkpoint-coordinator": "0bdbb1242ca4548fcf172c08a95a267cc6a0351710ced66982a14e6313cd204f",
+    "link-api": "43f3549a777598309ad0be945001cef4bd6798636cf5961e56b016a4b15e0dd9",
+    "link-runtime": "342c5441030fa9cc196e3ae4bf1747bee95dbf43b96e338742f314379596850e",
+    "link-wire": "310d31ff2a0ebfd4db26dd875b687696f2cc07071df69eca04a35980d8d6617d",
+    "live-authority": "b43acb156bcf40bddbca119266c058e288a749c1bfaccfb11d223b2acb359273",
+    "postgres-authority": "fdf0103d546d413e09f5cdc9ad7a627479382e58a46204fedaf2cdafe8bbb94e",
+    "reciprocal": "f27c6d35ee7b6d0370b46a62ecb61e29ca55afa083338178a4a71c9ee0b95ec9",
+    "single-db-candidate": "58552590d78d1efd09c378473c1d04311e4709f0877ed4d89fe23419214e8f33",
+    "site-authority": "e952a208721edfae034908e8624d9ea6c592b036231ec5ecd84b7aa3a5609c3f"
+  },
+  "schema": "yqaa.q02.cross-repo-source-pins.v1",
+  "source_note": "Pinned recovered Portal source; sibling equality requires a Portal checkout."
+}

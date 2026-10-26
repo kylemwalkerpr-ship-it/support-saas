@@ -46,6 +46,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'Audit', href: '/audit', icon: ScrollText },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
+    { label: 'Account linking', href: '/account/reciprocal-consent', icon: Settings },
   ],
   admin: [
     { label: 'Home', href: '/dashboard', icon: LayoutDashboard },
@@ -61,6 +62,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: 'Support Agents', href: '/admin/users', icon: Users },
     { label: 'Inquiries', href: '/inquiries', icon: Inbox },
     { label: 'Settings', href: '/settings', icon: Settings },
+    { label: 'Account linking', href: '/account/reciprocal-consent', icon: Settings },
   ],
 }
 

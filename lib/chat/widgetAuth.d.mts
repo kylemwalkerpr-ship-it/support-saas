@@ -16,6 +16,13 @@ export declare function authorizeConversation(
   conversationId: unknown,
   token: string | null
 ): Promise<Record<string, unknown> | null>
+/** Reuse a live visitor-owned conversation; otherwise begin an isolated chat. */
+export declare function resolveWidgetPostTarget(
+  db: SupabaseClient,
+  conversationId: string | null | undefined,
+  token: string | null
+): Promise<{ conversationId: string | undefined; existingStatus: string | null; restarted: boolean }>
+
 export interface WidgetPayload {
   conversation: Record<string, unknown> | null
   messages: Record<string, unknown>[]

@@ -13,7 +13,7 @@ const AUTHORIZED_PARTIES = (process.env.CLERK_AUTHORIZED_PARTIES ?? '')
 // a real 404 instead of bouncing anonymous visitors to /sign-in (Phase 6).
 // tests/support-known-routes.test.mjs keeps this list in sync with app/.
 const KNOWN_TOP_SEGMENTS = new Set([
-  'admin', 'api', 'audit', 'dashboard', 'disputes', 'inbox', 'inquiries', 'macros', 'metrics',
+  'account', 'admin', 'api', 'audit', 'dashboard', 'disputes', 'inbox', 'inquiries', 'macros', 'metrics',
   'moderation', 'no-access', 'onboarding', 'orders', 'settings', 'sign-in', 'sign-up', 'users',
   'verifications', 'robots.txt', 'sitemap.xml',
 ])

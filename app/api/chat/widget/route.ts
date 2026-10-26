@@ -7,12 +7,12 @@ import {
   shouldEscalateToLiveAgent,
 } from '@/lib/chat/knowledge'
 import {
-  authorizeConversation,
   corsHeadersFor,
   generateVisitorToken,
   hashVisitorToken,
   loadWidgetPayload,
   readVisitorToken,
+  resolveWidgetPostTarget,
 } from '@/lib/chat/widgetAuth.mjs'
 
 // Phase 5 CORS: YouSafe origins only (see lib/chat/widgetAuth.mjs); never a wildcard.
@@ -31,22 +31,13 @@ export async function POST(request: NextRequest) {
 
     const db = createSupabaseAdminClient()
     let conversationId = body.conversationId as string | undefined
-    let existingStatus: string | null = null
-
     // A visitor may only continue a conversation they hold the token for
     // (X-Chat-Token). Unknown id, wrong/missing token, a pre-token legacy
     // conversation, or a closed one: start a fresh conversation instead of
     // writing into (or echoing back) someone else's transcript.
-    let restarted = false
-    if (conversationId) {
-      const existingConversation = await authorizeConversation(db, conversationId, readVisitorToken(request))
-      existingStatus = (existingConversation?.status as string | undefined) ?? null
-      if (!existingConversation || ['resolved', 'closed'].includes(existingStatus ?? '')) {
-        restarted = true
-        conversationId = undefined
-        existingStatus = null
-      }
-    }
+    const target = await resolveWidgetPostTarget(db, conversationId, readVisitorToken(request))
+    conversationId = target.conversationId
+    let { existingStatus, restarted } = target
 
     // Raw token is returned once, to the creator only; just its hash is stored.
     let visitorToken: string | undefined

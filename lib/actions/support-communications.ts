@@ -6,6 +6,7 @@ import {
   logSupportAction,
 } from '@/lib/actions/support-audit'
 import { SupportActionError } from '@/lib/errors'
+import { supportAccessDenial } from '@/lib/support-access-policy.mjs'
 import { addUserNote } from '@/lib/actions/support-users'
 import { getMacroById, renderMacroBody } from '@/lib/actions/support-macros'
 import { sendSupportEmail } from '@/lib/email'
@@ -41,13 +42,8 @@ async function requireSupportOrAdmin(): Promise<Profile> {
   if (!profile) {
     throw new SupportActionError('unauthorized', 'No authenticated profile', 401)
   }
-  if (profile.role !== 'support' && profile.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      `Role '${profile.role}' is not permitted on this surface`,
-      403
-    )
-  }
+  const denial = supportAccessDenial(profile)
+  if (denial) throw new SupportActionError(denial.code, denial.message, denial.status)
   return profile
 }
 

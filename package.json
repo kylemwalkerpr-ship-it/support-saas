@@ -29,6 +29,7 @@
     "lucide-react": "^1.14.0",
     "next": "latest",
     "node-fetch": "^3.3.2",
+    "pg": "8.23.1",
     "react": "latest",
     "react-dom": "latest",
     "sonner": "^2.0.7",

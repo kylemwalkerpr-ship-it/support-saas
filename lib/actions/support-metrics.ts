@@ -3,6 +3,7 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { SupportActionError } from '@/lib/errors'
+import { supportAccessDenial } from '@/lib/support-access-policy.mjs'
 import { requireCan } from '@/lib/rbac'
 
 // ============================================================
@@ -45,13 +46,8 @@ export async function getHomeMetrics(): Promise<HomeMetrics> {
   if (!profile) {
     throw new SupportActionError('unauthorized', 'No authenticated profile', 401)
   }
-  if (profile.role !== 'support' && profile.role !== 'admin') {
-    throw new SupportActionError(
-      'forbidden',
-      `Role '${profile.role}' is not permitted on this surface`,
-      403
-    )
-  }
+  const denial = supportAccessDenial(profile)
+  if (denial) throw new SupportActionError(denial.code, denial.message, denial.status)
 
   const db = createSupabaseAdminClient()
   const out: HomeMetrics = { ...ZERO }
