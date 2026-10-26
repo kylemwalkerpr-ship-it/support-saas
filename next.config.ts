@@ -15,6 +15,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   env: {},
+  // pg's Cloudflare socket adapter is loaded with a conditional require().
+  // Explicitly trace the adapter so OpenNext packages it with the Worker.
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/pg-cloudflare/**/*'],
+  },
   // Phase 6: do not advertise the framework (X-Powered-By: Next.js).
   poweredByHeader: false,
   async headers() {
