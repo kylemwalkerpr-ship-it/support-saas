@@ -18,6 +18,17 @@ command = "npx opennextjs-cloudflare build --openNextConfigPath open-next.cloudf
 directory = ".open-next/assets"
 binding = "ASSETS"
 
+# Independent append-only privacy checkpoint state. The signing key, trust
+# manifest, bootstrap capability, and approved enrollment tuples are provisioned
+# as Worker secrets/vars outside source control. No tenant is seeded here.
+[[durable_objects.bindings]]
+name = "Q02_CHECKPOINTS"
+class_name = "Q02CheckpointJournal"
+
+[[migrations]]
+tag = "q02-checkpoints-v1"
+new_sqlite_classes = ["Q02CheckpointJournal"]
+
 # Rate limiting (Sanitization Brief Phase 5): native Workers Rate Limiting,
 # enforced in lib/edgeGuard.mjs, keyed `<bucket>:<client IP>` per location.
 [[ratelimits]]
@@ -46,6 +57,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
 #   CLERK_SECRET_KEY
 #   CLERK_WEBHOOK_SECRET
 #   SUPABASE_SERVICE_ROLE_KEY
+#   CHECKPOINT_SIGNING_JWK (private ES256 JWK; never source or logs)
+#   CHECKPOINT_ADMIN_CAPABILITY (bootstrap only)
+#   CHECKPOINT_TRUST (public ES256 trust manifest JSON)
+#   CHECKPOINT_ENROLLMENTS (approved tenant/generation/genesis JSON tuples)
 
 [[routes]]
 pattern = "support.yousafeconsultancy.com"

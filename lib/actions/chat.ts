@@ -3,6 +3,7 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getClerkUserId } from '@/lib/auth'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
+import { canAccessSupportSurface } from '@/lib/support-access-policy.mjs'
 import { SUPPORT_INBOXES, estimateWaitMinutes } from '@/lib/chat/knowledge'
 import type { ChatConversation, ChatMessage, Profile } from '@/lib/types'
 
@@ -12,11 +13,7 @@ async function requireSupportProfile() {
 
   const profile = await getOrCreateProfile()
 
-  if (
-    !profile ||
-    !['admin', 'support'].includes(profile.role) ||
-    (profile.role === 'support' && profile.status !== 'active')
-  ) {
+  if (!canAccessSupportSurface(profile)) {
     throw new Error('Forbidden')
   }
 

@@ -4,6 +4,9 @@
 // See lib/edgeGuard.mjs. `.open-next/worker.js` is produced by the build.
 import openNextWorker from './.open-next/worker.js'
 import { ensureBaselineHeaders, rateLimitRequest, redactErrorResponse } from './lib/edgeGuard.mjs'
+import { Q02CheckpointJournal } from './lib/privacy/checkpoint-journal.mjs'
+export { Q02CheckpointJournal }
+
 
 export * from './.open-next/worker.js'
 

@@ -4,7 +4,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/actions/profiles'
 import { SupportActionError } from '@/lib/errors'
 import { requireCan } from '@/lib/rbac'
-import type { Profile, SupportAuditLogEntry, SupportActorRole } from '@/lib/types'
+import { supportAccessDenial } from '@/lib/support-access-policy.mjs'
+import type { Profile, SupportAuditLogEntry } from '@/lib/types'
 
 // ============================================================
 // Phase 9 — Audit log viewer (READ side)
@@ -81,22 +82,13 @@ function defaultDateFromIso(): string {
   return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 }
 
-function isSupportActorRole(role: string): role is SupportActorRole {
-  return role === 'support' || role === 'admin'
-}
-
 async function requireSupportOrAdmin(): Promise<Profile> {
   const profile = await getOrCreateProfile()
   if (!profile) {
     throw new SupportActionError('unauthorized', 'No authenticated profile', 401)
   }
-  if (!isSupportActorRole(profile.role)) {
-    throw new SupportActionError(
-      'forbidden',
-      `Role '${profile.role}' is not permitted on this surface`,
-      403
-    )
-  }
+  const denial = supportAccessDenial(profile)
+  if (denial) throw new SupportActionError(denial.code, denial.message, denial.status)
   return profile
 }
 
