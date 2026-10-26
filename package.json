@@ -30,6 +30,7 @@
     "next": "latest",
     "node-fetch": "^3.3.2",
     "pg": "8.23.1",
+    "pg-cloudflare": "1.4.1",
     "react": "latest",
     "react-dom": "latest",
     "sonner": "^2.0.7",
