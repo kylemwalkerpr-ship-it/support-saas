@@ -2,7 +2,8 @@
 // Portal pair migrations. Never accepts a database URL or connects externally.
 import { mkdtempSync, rmSync, readFileSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import assert from 'node:assert/strict'
 import pg from 'pg'
@@ -14,7 +15,10 @@ import { createSiteAuthority } from '../lib/privacy/site-authority.mjs'
 import { createCheckpointCoordinator } from '../lib/privacy/checkpoint-coordinator.mjs'
 import { payload } from '../lib/privacy/link-wire.mjs'
 
-const portal = '/Users/phantomdarne/.openhands-platform/yqaa-canonical/worktrees/yqaa-yqaa-q02-portal-pair-integration-20261017-r1/supabase/migrations'
+// Test the actual sibling Q02 Portal branch, never an archived OpenHands worktree.
+const portal = process.env.Q02_PORTAL_MIGRATIONS
+  ? resolve(process.env.Q02_PORTAL_MIGRATIONS)
+  : fileURLToPath(new URL('../../portal/supabase/migrations/', import.meta.url))
 const root = mkdtempSync(join(tmpdir(), 'q02-link-routes-pg-'))
 const data = join(root, 'data'), socket = join(root, 'socket')
 mkdirSync(socket)
@@ -51,6 +55,8 @@ try {
   for (const f of ['014_q02_support_privacy_contract.sql','015_q02_support_privacy_review.sql','016_q02_support_membership.sql','017_q02_support_coordinator_denial.sql','018_q02_single_postgres_candidate.sql']) migration(new URL(`../supabase/migrations/${f}`,import.meta.url).pathname)
   migration(new URL('../supabase/migrations/019_q02_runtime_authority.sql',import.meta.url).pathname)
   migration(new URL('../supabase/migrations/020_q02_link_routes.sql',import.meta.url).pathname)
+  // Native grant/default-ACL regression must pass before synthetic enrollment.
+  migration(new URL('../tests/q02-runtime-grants.native.sql',import.meta.url).pathname)
   const f=await linkFixture(),quote=v=>"'"+String(v).replaceAll("'","''")+"'",json=v=>quote(JSON.stringify(v))+'::jsonb'
   const hash=v=>createHash('sha256').update(v).digest('base64url')
   sql(`insert into q02_runtime.tenants values(${quote(f.tenant)},${quote(f.generation)},0,${quote(f.genesis)},${quote(f.genesis)});

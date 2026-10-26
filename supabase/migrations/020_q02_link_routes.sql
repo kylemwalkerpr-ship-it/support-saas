@@ -194,6 +194,10 @@ begin
  return q02_runtime.ack(t,(own->>'sequence')::bigint,own->>'eventDigest',sub,sd);
 end $$;
 reset role;
+-- Defense in depth: functions created by the dedicated owner must never be
+-- executable by PUBLIC, browser roles or the generic service_role.
+-- Preserve existing explicitly scoped runtime grants from migration 019.
+revoke all on all functions in schema q02_runtime from public,anon,authenticated,service_role;
 revoke all on function q02_runtime.ack(text,bigint,text,text,text) from q02_support_runtime,q02_portal_runtime;
 revoke all on all tables in schema q02_runtime from public,anon,authenticated,service_role,q02_coordinator_runtime,q02_support_runtime,q02_portal_runtime;
 grant execute on function q02_runtime.enroll_session(text,text,text,text,text,bigint),q02_runtime.site_command(text,text,text,jsonb),q02_runtime.event_context(text,text,text,text,text),q02_runtime.record_signed_ack(text,text,text,jsonb,jsonb) to q02_support_runtime,q02_portal_runtime;

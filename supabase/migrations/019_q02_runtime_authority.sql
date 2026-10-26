@@ -30,7 +30,10 @@ create policy q02_authority_read on public.q02_portal_challenges for select to q
 grant update on public.support_privacy_deployments,public.support_privacy_memberships,public.support_privacy_consents,public.support_privacy_intents,
  public.q02_portal_deployments,public.q02_portal_memberships,public.q02_portal_consents,public.q02_portal_challenges to q02_authority_owner;
 set local role q02_authority_owner;
-alter default privileges in schema q02_runtime revoke execute on functions from public;
+-- PostgreSQL's global default grants EXECUTE on functions to PUBLIC.
+-- A schema-scoped REVOKE cannot undo that global default. This dedicated
+-- non-login owner must instead revoke the global default for its own functions.
+alter default privileges revoke execute on functions from public;
 create function q02_runtime.hash(v text) returns text language sql immutable strict set search_path=pg_catalog as $$
  select translate(rtrim(encode(sha256(convert_to(v,'UTF8')),'base64'),'='),'+/','-_') $$;
 create table q02_runtime.tenants (
